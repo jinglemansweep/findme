@@ -77,6 +77,9 @@
   // Let the Worker bundle PRIVACY.md as text and serve it at /privacy.
   "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
   "env": {
+    // NOTE: named environments do NOT inherit bindings (vars,
+    // durable_objects, r2_buckets, ratelimits, send_email) — each env must
+    // restate the full set. Only d1 ids differ between them.
     "staging": {
       "name": "findme-staging",
       // On the free workers.dev URL until narks.uk is on this Cloudflare
@@ -92,6 +95,44 @@
           "migrations_dir": "migrations",
         },
       ],
+      "r2_buckets": [
+        { "binding": "TILES", "bucket_name": "findme-tiles", "remote": true },
+      ],
+      "vars": {
+        "PMTILES_KEY": "uk.pmtiles",
+        "TILES_MAXZOOM": "14",
+        "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
+        "ABUSE_EMAIL": "abuse@narks.uk",
+        "PRIVACY_EMAIL": "privacy@narks.uk",
+        "TURNSTILE_SITE_KEY": "",
+        "KILL_SWITCH": "false",
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "LIVE_PIN", "class_name": "LivePin" },
+          { "name": "EMAIL_LIMITER", "class_name": "EmailLimiter" },
+        ],
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["LivePin", "EmailLimiter"] },
+      ],
+      "ratelimits": [
+        {
+          "name": "SLUG_LOOKUPS",
+          "namespace_id": "1001",
+          "simple": { "limit": 60, "period": 60 },
+        },
+        {
+          "name": "PIN_CREATES",
+          "namespace_id": "1002",
+          "simple": { "limit": 10, "period": 60 },
+        },
+      ],
+      "send_email": [
+        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+      ],
+      "limits": { "cpu_ms": 200 },
+      "triggers": { "crons": ["*/10 * * * *"] },
       // "routes": [{ "pattern": "staging.find.narks.uk", "custom_domain": true }],
     },
     "production": {
@@ -105,6 +146,44 @@
           "migrations_dir": "migrations",
         },
       ],
+      "r2_buckets": [
+        { "binding": "TILES", "bucket_name": "findme-tiles", "remote": true },
+      ],
+      "vars": {
+        "PMTILES_KEY": "uk.pmtiles",
+        "TILES_MAXZOOM": "14",
+        "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
+        "ABUSE_EMAIL": "abuse@narks.uk",
+        "PRIVACY_EMAIL": "privacy@narks.uk",
+        "TURNSTILE_SITE_KEY": "",
+        "KILL_SWITCH": "false",
+      },
+      "durable_objects": {
+        "bindings": [
+          { "name": "LIVE_PIN", "class_name": "LivePin" },
+          { "name": "EMAIL_LIMITER", "class_name": "EmailLimiter" },
+        ],
+      },
+      "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["LivePin", "EmailLimiter"] },
+      ],
+      "ratelimits": [
+        {
+          "name": "SLUG_LOOKUPS",
+          "namespace_id": "1001",
+          "simple": { "limit": 60, "period": 60 },
+        },
+        {
+          "name": "PIN_CREATES",
+          "namespace_id": "1002",
+          "simple": { "limit": 10, "period": 60 },
+        },
+      ],
+      "send_email": [
+        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+      ],
+      "limits": { "cpu_ms": 200 },
+      "triggers": { "crons": ["*/10 * * * *"] },
       // "routes": [{ "pattern": "find.narks.uk", "custom_domain": true }],
     },
   },

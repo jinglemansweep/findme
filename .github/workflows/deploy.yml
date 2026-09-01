@@ -22,6 +22,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Named wrangler environments do not inherit bindings — a deploy can
+      # silently succeed without LIVE_PIN (it did once: pins created with no
+      # position). Dry-run each env and assert the DO binding is present.
+      - run: npx wrangler deploy --env staging --dry-run --outdir /tmp/dryrun-staging | tee /tmp/dryrun-staging.log
+      - run: grep -q "LIVE_PIN" /tmp/dryrun-staging.log
+      - run: npx wrangler deploy --env production --dry-run --outdir /tmp/dryrun-production | tee /tmp/dryrun-production.log
+      - run: grep -q "LIVE_PIN" /tmp/dryrun-production.log
 
   deploy-staging:
     needs: test

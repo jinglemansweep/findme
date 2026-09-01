@@ -41,6 +41,14 @@ against a new schema. Keep migrations **additive** — add columns, add tables,
 never drop or rename in the same release as the code that stops using them. Then
 old code continues to work and a rollback is safe.
 
+**Named environments restate their own bindings.** Wrangler environments do
+*not* inherit `vars`, `durable_objects`, `r2_buckets`, `ratelimits`, or
+`send_email` — only `d1_databases` differs between `env.staging` and
+`env.production`, but each env block carries the full set. A deploy with a
+missing binding succeeds silently (code catches the error and the feature
+just breaks at runtime), so CI dry-runs each environment and asserts the
+`LIVE_PIN` Durable Object binding is present.
+
 The two-release pattern for removing a column:
 
 1. Release A: stop reading and writing it. Deploy. Confirm.
