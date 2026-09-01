@@ -1,0 +1,12 @@
+{
+  "name": "Find Me",
+  "short_name": "Find Me",
+  "description": "Share your location with anyone, temporarily. No account, nothing kept.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#175e54",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

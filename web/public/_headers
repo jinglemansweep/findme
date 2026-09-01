@@ -1,0 +1,16 @@
+# Headers for responses served by the static asset layer (/, /assets/*, …).
+# Worker-served pages (/:slug, /u/:slug, /api/*) set equivalent headers in code
+# (src/lib/http.ts). Keep the CSP in sync.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self)
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://challenges.cloudflare.com https://tiles.openfreemap.org; worker-src 'self' blob:; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'none'; form-action 'none'
+
+# Asset filenames are fixed (so the Worker shells can reference them without
+# a build manifest), so they cannot be content-hashed. Revalidation instead
+# of caching: one conditional request per asset, and a rebuild is always
+# picked up immediately.
+/assets/*
+  Cache-Control: public, max-age=0, must-revalidate

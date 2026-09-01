@@ -1,0 +1,604 @@
+/* Find Me — mobile-first. Three visually distinct shells:
+   .shell-create / .shell-view (light) vs .shell-control (dark control theme,
+   the §3 anti-footgun). */
+
+:root {
+  --ink: #2b2721;
+  --ink-soft: #57534b;
+  --paper: #f6f4ef;
+  --card: #ffffff;
+  --line: #e3ded4;
+  --brand: #175e54;
+  --brand-ink: #0e3d37;
+  --accent: #b3261e;
+  --ok: #1b7a43;
+  --warn: #8a5a00;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(43, 39, 33, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* min-height, never a fixed height: the create form is taller than many
+   viewports, and a fixed-height flex chain squashes it behind the footer. */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---- chrome ---- */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: var(--brand);
+}
+
+.brand {
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  font-size: 1.05rem;
+}
+
+.shell-control .app-header {
+  background: #26221d;
+}
+
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  justify-content: center;
+  padding: 0.55rem 1rem calc(0.55rem + env(safe-area-inset-bottom));
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+
+.app-footer a {
+  color: var(--ink-soft);
+}
+
+/* ---- generic ---- */
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.62rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.button:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.button.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.button.secondary {
+  background: var(--card);
+}
+
+.button.ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.button.danger {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.button.big {
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+}
+
+.button.small {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.button-row.wrap {
+  flex-wrap: wrap;
+}
+
+.error-text {
+  color: var(--accent);
+  margin: 0.4rem 0;
+}
+
+.field-note {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0.3rem 0 0;
+}
+
+.field-note.warning {
+  color: var(--warn);
+}
+
+/* ---- cards / states ---- */
+
+.state-card,
+.info-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.2rem;
+  margin: 1rem auto;
+  max-width: 640px;
+  width: calc(100% - 1.6rem);
+}
+
+.state-card h1 {
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+.state-card[data-state="ended"] h1 {
+  color: var(--ink-soft);
+}
+
+.info-card h1,
+.info-card h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.15rem;
+}
+
+.info-card h2 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+
+.info-card > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---- map ---- */
+
+.map-stack {
+  position: relative;
+  flex: 1;
+  min-height: 40dvh;
+  display: flex;
+}
+
+.map-wrap {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.3s ease;
+}
+
+.map-wrap.dimmed {
+  opacity: 0.55;
+}
+
+.map-wrap.clickable {
+  cursor: crosshair;
+}
+
+.map-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  background: var(--paper);
+}
+
+.map-hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(0.7rem + env(safe-area-inset-top));
+  max-width: calc(100% - 9.5rem);
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  text-align: center;
+}
+
+/* Floating map controls live at the TOP of the map: the bottom is covered by
+   the info sheet, so bottom-anchored buttons would hide behind it. */
+.map-button {
+  position: absolute;
+  top: calc(0.7rem + env(safe-area-inset-top));
+  left: 0.7rem;
+  box-shadow: var(--shadow);
+}
+
+.map-button.confirm-move {
+  top: calc(3.6rem + env(safe-area-inset-top));
+}
+
+.map-button.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 0.7rem;
+}
+
+/* ---- view page ---- */
+
+.view-page,
+.control-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* The info card is a compact panel floating over the map's bottom-right
+   corner: the map stays full-bleed and the panel scrolls internally. On
+   phones it is near full width but kept short; on desktop it leaves the
+   whole left side of the map visible. */
+.view-page .info-card,
+.control-page .control-card,
+.create-page .info-card {
+  position: absolute;
+  right: 0.8rem;
+  bottom: calc(0.8rem + env(safe-area-inset-bottom));
+  width: min(420px, calc(100% - 1.6rem));
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.view-page .info-card {
+  max-height: 42dvh;
+}
+
+.control-page .control-card {
+  max-height: 54dvh;
+}
+
+.create-page .info-card {
+  max-height: 58dvh;
+}
+
+.pin-label {
+  font-size: 1.2rem;
+}
+
+.freshness {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.2rem 0;
+  font-weight: 600;
+}
+
+.freshness::before {
+  content: "";
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.freshness.stale::before {
+  background: var(--warn);
+}
+
+.freshness.pending::before {
+  background: var(--ink-soft);
+}
+
+.banner {
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  font-weight: 600;
+}
+
+.banner.disconnected {
+  background: #fdeceb;
+  color: var(--accent);
+  border: 1px solid #f3c2be;
+}
+
+.a11y-summary {
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.a11y-summary summary {
+  cursor: pointer;
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+
+.a11y-summary output {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- create page ---- */
+
+.create-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.create-hero {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.locate-button {
+  position: absolute;
+  top: calc(0.7rem + env(safe-area-inset-top));
+  left: 0.7rem;
+  box-shadow: var(--shadow);
+}
+
+.form-field {
+  margin-bottom: 0.55rem;
+}
+
+.form-field label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+input[type="text"],
+input[type="email"],
+select {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font: inherit;
+  color: inherit;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+}
+
+.toggle-row input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--brand);
+}
+
+.copy-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.copy-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.copy-block {
+  margin: 0.6rem 0;
+}
+
+.copy-block h2 {
+  margin-bottom: 0.4rem;
+}
+
+.created-panel h1 {
+  margin-top: 0;
+}
+
+.saved-pins {
+  border-top: 1px solid var(--line);
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+}
+
+.saved-pins ul {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+}
+
+.saved-pins li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.saved-link {
+  color: var(--brand-ink);
+  font-weight: 600;
+}
+
+/* ---- control page (distinct dark-accented theme, §3 anti-footgun) ---- */
+
+.shell-control {
+  --paper: #efe9df;
+  --card: #fffdf9;
+}
+
+/* The warning is a sticky header of the floating control card: it overlays
+   nothing (the map keeps full height) and never scrolls out of view. */
+.control-banner {
+  position: sticky;
+  top: -0.85rem; /* cancel the card's padding-top so it sticks flush */
+  z-index: 1;
+  margin: -0.85rem -0.95rem 0.7rem;
+  padding: 0.75rem 0.95rem;
+  border-radius: 11px 11px 0 0;
+  background: #26221d;
+  color: #f2ece2;
+}
+
+.control-banner p {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+  color: #d8d0c2;
+}
+
+.control-section {
+  border-top: 1px solid var(--line);
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+}
+
+.confirm-row p {
+  margin: 0.3rem 0 0.6rem;
+}
+
+.danger-zone .button.danger {
+  width: 100%;
+}
+
+.primary-copy {
+  background: #eef4f0;
+  border: 1px solid #d5e2da;
+  border-radius: 12px;
+  padding: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+/* ---- privacy page ---- */
+
+.shell-privacy main {
+  display: block;
+  overflow: visible;
+}
+
+.prose {
+  max-width: 680px;
+  margin: 1.2rem auto 2rem;
+  padding: 0 1.2rem;
+}
+
+.prose h2 {
+  font-size: 1.3rem;
+  margin: 1.6rem 0 0.5rem;
+}
+
+.prose h3 {
+  font-size: 1.05rem;
+  margin: 1.3rem 0 0.4rem;
+}
+
+.prose p {
+  margin: 0.6rem 0;
+}
+
+.prose ul {
+  padding-left: 1.3rem;
+}
+
+.prose hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 1.4rem 0;
+}
+
+.prose a {
+  color: var(--brand-ink);
+}
+
+/* ---- desktop ---- */
+
+@media (min-width: 800px) {
+  .map-stack {
+    min-height: 55dvh;
+  }
+}
+
+/* Kept last so it wins over the individual control rules above. On
+   containers < 640px MapLibre force-expands the attribution control into a
+   full-width bar at the top of the map, so the floating controls must sit
+   below that strip; on wider screens it collapses to an ⓘ button. */
+@media (max-width: 639px) {
+  .map-hint,
+  .map-button,
+  .locate-button {
+    top: calc(3.4rem + env(safe-area-inset-top));
+  }
+
+  .map-button.confirm-move {
+    top: calc(6.3rem + env(safe-area-inset-top));
+  }
+}

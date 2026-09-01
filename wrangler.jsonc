@@ -1,0 +1,111 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "findme",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  // Root-level slug URLs (/:slug, /u/:slug) are Worker-served HTML shells.
+  // Since compat date 2025-04-01, navigation requests that miss a static
+  // asset would otherwise be answered with index.html without invoking the
+  // Worker ("navigation requests prefer asset serving"). This flag restores
+  // the old behaviour so the shells are reachable. See PLAN.md §3/§5.
+  "compatibility_flags": ["assets_navigation_has_no_effect"],
+  "assets": {
+    "directory": "./web/dist",
+    "not_found_handling": "single-page-application",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "findme",
+      // Replace per environment before deploying (see README).
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [
+    // `remote: true` — `wrangler dev` reads the real bucket; the basemap
+    // archive is multi-GB and a local copy drifts out of sync (§13).
+    { "binding": "TILES", "bucket_name": "findme-tiles", "remote": true },
+  ],
+  "vars": {
+    // PMTILES_KEY and MAP_BOUNDS move together: going global is a two-value
+    // flip and a redeploy (docs/TILES.md §4).
+    "PMTILES_KEY": "uk.pmtiles",
+    "TILES_MAXZOOM": "14",
+    "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
+    "ABUSE_EMAIL": "abuse@narks.uk",
+    "PRIVACY_EMAIL": "privacy@narks.uk",
+    // Set to a Turnstile site key (and the secret via `wrangler secret put
+    // TURNSTILE_SECRET`) to require a captcha on pin creation.
+    "TURNSTILE_SITE_KEY": "",
+    // "true" disables pin creation and position writes while leaving
+    // existing pins readable (PLAN.md §17).
+    "KILL_SWITCH": "false",
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "LIVE_PIN", "class_name": "LivePin" },
+      { "name": "EMAIL_LIMITER", "class_name": "EmailLimiter" },
+    ],
+  },
+  "migrations": [
+    // new_sqlite_classes, not new_classes — selects the SQLite storage
+    // backend (the only backend available on the Workers Free plan).
+    { "tag": "v1", "new_sqlite_classes": ["LivePin", "EmailLimiter"] },
+  ],
+  // `ratelimits` requires Wrangler 4.36.0 or later.
+  "ratelimits": [
+    {
+      "name": "SLUG_LOOKUPS",
+      "namespace_id": "1001",
+      "simple": { "limit": 60, "period": 60 },
+    },
+    {
+      "name": "PIN_CREATES",
+      "namespace_id": "1002",
+      "simple": { "limit": 10, "period": 60 },
+    },
+  ],
+  "send_email": [
+    // Sender restricted, destination unrestricted. Requires the sending
+    // domain (mail.narks.uk) to be onboarded (PLAN.md §9). Add "remote":
+    // true to this binding for local dev when working on email.
+    { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+  ],
+  "limits": { "cpu_ms": 200 },
+  "triggers": { "crons": ["*/10 * * * *"] },
+  // Let the Worker bundle PRIVACY.md as text and serve it at /privacy.
+  "rules": [{ "type": "Text", "globs": ["**/*.md"], "fallthrough": true }],
+  "env": {
+    "staging": {
+      "name": "findme-staging",
+      // On the free workers.dev URL until narks.uk is on this Cloudflare
+      // account: https://findme-staging.<your-subdomain>.workers.dev
+      // (wrangler prints the exact URL on first deploy). Re-enable the
+      // custom domain route below when switching over.
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "findme-staging",
+          "database_id": "82beaa6d-c9ee-4bd6-9742-58873c9df3b5",
+          "migrations_dir": "migrations",
+        },
+      ],
+      // "routes": [{ "pattern": "staging.find.narks.uk", "custom_domain": true }],
+    },
+    "production": {
+      "name": "findme",
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "findme",
+          "database_id": "47b54005-1436-4d41-ad7b-f84640956531",
+          "migrations_dir": "migrations",
+        },
+      ],
+      // "routes": [{ "pattern": "find.narks.uk", "custom_domain": true }],
+    },
+  },
+}

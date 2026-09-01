@@ -1,0 +1,8 @@
+node_modules/
+web/dist/
+web/public/vendor/
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
+coverage/

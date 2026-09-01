@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Share your location with anyone, temporarily. No account, nothing kept.">
+  <meta name="theme-color" content="#175e54">
+  <title>Find Me — share your location temporarily</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+</head>
+<body class="shell-create">
+  <header class="app-header">
+    <a class="brand" href="/">Find&nbsp;Me</a>
+  </header>
+  <main id="root">
+    <section class="create-hero">
+      <h1>Share where you are, temporarily</h1>
+      <p role="status">Loading…</p>
+    </section>
+  </main>
+  <footer class="app-footer">
+    <a href="/privacy">Privacy</a>
+    <span aria-hidden="true">·</span>
+    <span class="osm-attribution">Map data © OpenStreetMap contributors (ODbL)</span>
+  </footer>
+  <script type="application/json" id="findme-boot">{"mode":"create"}</script>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

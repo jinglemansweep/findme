@@ -1,0 +1,23 @@
+{
+  "name": "findme-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "copy-vendor": "node scripts/copy-maplibre-vendor.mjs",
+    "dev": "npm run copy-vendor && vite",
+    "build": "npm run copy-vendor && vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.6.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2"
+  }
+}
