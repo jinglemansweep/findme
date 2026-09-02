@@ -21,7 +21,7 @@ import { ipHash, rateLimitOk } from "./lib/ratelimit";
 import { isSlug } from "./lib/slug";
 import { controlShell } from "./shells/control";
 import { privacyShell } from "./shells/privacy";
-import { publicShell } from "./shells/public";
+import { notFoundShell, publicShell } from "./shells/public";
 import { handleTiles } from "./tiles/routes";
 
 export { EmailLimiter, LivePin };
@@ -75,7 +75,13 @@ async function route(request: Request, env: Env, url: URL, path: string): Promis
   // Everything else (/, /assets/*, /favicon.svg, /robots.txt, …) belongs
   // to the static asset layer; unmatched GETs fall back to the SPA.
   if (request.method === "GET" || request.method === "HEAD") {
-    return env.ASSETS.fetch(request);
+    if (env.ASSETS) return env.ASSETS.fetch(request);
+    // Named environments deploy without the ASSETS binding — serve a plain
+    // 404 page instead of crashing on the SPA fallback.
+    return html(notFoundShell(footerFrom(env)), {
+      status: 404,
+      headers: { "X-Robots-Tag": "noindex" },
+    });
   }
   return errorJson(404, "not found");
 }

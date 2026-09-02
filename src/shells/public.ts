@@ -10,6 +10,22 @@ export interface PublicShellInput {
   footer: { abuseEmail: string | null; privacyEmail: string | null };
 }
 
+/** Plain 404 page for URLs that match nothing — used when the Worker has no
+ *  ASSETS binding (named environments) and cannot fall back to the SPA. */
+export function notFoundShell(footer: { abuseEmail: string | null; privacyEmail: string | null }): string {
+  return renderShell({
+    title: "Not found — Find Me",
+    includeApp: false,
+    content: `
+<section class="state-card" data-state="notfound">
+  <h1>There's nothing here</h1>
+  <p>This page doesn't exist. Check the link, or start a new share.</p>
+  <p><a class="button secondary" href="/">Go to Find Me</a></p>
+</section>`,
+    footer,
+  });
+}
+
 /**
  * HTML for /:slug — the public viewer page. Generic OG card only: previews
  * are fetched and cached by messaging platforms' CDNs, so no coordinates and

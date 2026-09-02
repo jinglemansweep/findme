@@ -52,15 +52,16 @@ jobs:
         run: npx wrangler deploy --env staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      # Exercises the Worker-served asset paths: / (run_worker_first) and an
-      # unmatched URL (SPA fallback via env.ASSETS — 500s if the named env is
-      # missing the assets config, which the bindings table never shows).
+      # Exercises the Worker-served paths: / (static asset), an unmatched URL
+      # (404 page — 500s if the Worker assumes an ASSETS binding the named
+      # env doesn't have), and the worker-rendered privacy page. Retries for
+      # up to ~2 min because the edge can briefly serve the previous version.
       - name: Smoke test (staging)
         run: |
-          sleep 10
-          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/ | grep -q "Find Me"
-          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/no-such-page | grep -q "Find Me"
-          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/privacy | grep -q "There are no accounts"
+          check() { for i in $(seq 1 12); do if "$@" >/dev/null 2>&1; then return 0; fi; sleep 10; done; "$@"; }
+          check sh -c 'curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/ | grep -q "Find Me"'
+          check sh -c 'test "$(curl -sS --max-time 30 -o /dev/null -w "%{http_code}" https://findme-staging.ptrees.workers.dev/no-such-page)" = "404"'
+          check sh -c 'curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/privacy | grep -q "There are no accounts"'
 
   deploy-production:
     needs: test
