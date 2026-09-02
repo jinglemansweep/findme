@@ -12,10 +12,9 @@
   "assets": {
     "directory": "./web/dist",
     "not_found_handling": "single-page-application",
-    // Asset hits are normally served without invoking the Worker, which
-    // would skip the ENV_LABEL marker — route the homepage through the
-    // Worker (it re-fetches the asset itself) so staging can badge it too.
-    "run_worker_first": ["/"],
+    // NOTE: named environments get the asset routing but no env.ASSETS
+    // binding (see .github/workflows/deploy.yml smoke test) — the Worker
+    // never fetches assets directly.
   },
   "d1_databases": [
     {
@@ -90,14 +89,6 @@
       // too). Staging is labelled "beta" via ENV_LABEL so it can't be
       // mistaken for production.
       "workers_dev": true,
-      // Named environments do not inherit the top-level assets config —
-      // without this the env has no ASSETS binding and any Worker-served
-      // asset fetch 500s.
-      "assets": {
-        "directory": "./web/dist",
-        "not_found_handling": "single-page-application",
-        "run_worker_first": ["/"],
-      },
       "d1_databases": [
         {
           "binding": "DB",
@@ -151,13 +142,6 @@
     "production": {
       "name": "findme",
       "workers_dev": true,
-      // See the staging env: named environments do not inherit the top-level
-      // assets config, so the ASSETS binding must be restated here too.
-      "assets": {
-        "directory": "./web/dist",
-        "not_found_handling": "single-page-application",
-        "run_worker_first": ["/"],
-      },
       "d1_databases": [
         {
           "binding": "DB",

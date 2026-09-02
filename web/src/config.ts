@@ -7,6 +7,7 @@ const FALLBACK_CONFIG: AppConfig = {
   turnstileSiteKey: null,
   abuseEmail: null,
   privacyEmail: null,
+  envLabel: null,
 };
 
 export async function fetchAppConfig(): Promise<AppConfig> {

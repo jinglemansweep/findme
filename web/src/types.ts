@@ -6,6 +6,8 @@ export interface AppConfig {
   turnstileSiteKey: string | null;
   abuseEmail: string | null;
   privacyEmail: string | null;
+  /** Non-production marker (staging's "beta"). */
+  envLabel: string | null;
 }
 
 export interface BootConfig {

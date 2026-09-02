@@ -14,12 +14,15 @@ export interface AppConfig {
     | { kind: "pmtiles"; tilesUrl: string }
     | { kind: "style"; url: string };
   /** [[west, south], [east, north]] — the archive's coverage; constrains
-   * panning so users never see blank ocean outside the extract (§13). */
+   *  panning so users never see blank ocean outside the extract (§13). */
   mapBounds: [[number, number], [number, number]] | null;
   mapMaxZoom: number | null;
   turnstileSiteKey: string | null;
   abuseEmail: string | null;
   privacyEmail: string | null;
+  /** Non-production marker (staging's "beta"); the SPA labels the create
+   *  page with it — worker-rendered pages are labelled server-side. */
+  envLabel: string | null;
 }
 
 function parseBounds(raw: string | undefined): [[number, number], [number, number]] | null {
@@ -47,6 +50,7 @@ export async function handleConfig(env: Env): Promise<Response> {
     turnstileSiteKey: env.TURNSTILE_SITE_KEY || null,
     abuseEmail: env.ABUSE_EMAIL ?? null,
     privacyEmail: env.PRIVACY_EMAIL ?? null,
+    envLabel: env.ENV_LABEL || null,
   };
   return json(config, { headers: { "Cache-Control": "public, max-age=60" } });
 }

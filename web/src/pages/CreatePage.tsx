@@ -34,6 +34,17 @@ export function CreatePage({ config }: { config: AppConfig }) {
   const [saved, setSaved] = useState<SavedPin[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // Non-production marker (staging's "beta"): this page's shell is a static
+  // asset the Worker never renders, so the label is applied client-side
+  // from the config (worker-rendered pages are labelled server-side).
+  useEffect(() => {
+    if (!config.envLabel) return;
+    document.title = `${document.title} (${config.envLabel})`;
+    document
+      .querySelector(".app-header .brand")
+      ?.insertAdjacentHTML("afterend", `<span class="env-badge">${config.envLabel}</span>`);
+  }, [config.envLabel]);
+
   // Restore the "share is live" panel only if the pin really is still live —
   // it may have been stopped or rotated from the control page since.
   useEffect(() => {
