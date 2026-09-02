@@ -12,6 +12,10 @@
   "assets": {
     "directory": "./web/dist",
     "not_found_handling": "single-page-application",
+    // Asset hits are normally served without invoking the Worker, which
+    // would skip the ENV_LABEL marker — route the homepage through the
+    // Worker (it re-fetches the asset itself) so staging can badge it too.
+    "run_worker_first": ["/"],
   },
   "d1_databases": [
     {
