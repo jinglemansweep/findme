@@ -25,6 +25,8 @@ jobs:
       # Named wrangler environments do not inherit bindings — a deploy can
       # silently succeed without LIVE_PIN (it did once: pins created with no
       # position). Dry-run each env and assert the DO binding is present.
+      # (The ASSETS binding is never printed in this table; the post-deploy
+      # smoke test below is what actually proves it works.)
       - run: npx wrangler deploy --env staging --dry-run --outdir /tmp/dryrun-staging | tee /tmp/dryrun-staging.log
       - run: grep -q "LIVE_PIN" /tmp/dryrun-staging.log
       - run: npx wrangler deploy --env production --dry-run --outdir /tmp/dryrun-production | tee /tmp/dryrun-production.log
@@ -50,6 +52,15 @@ jobs:
         run: npx wrangler deploy --env staging
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Exercises the Worker-served asset paths: / (run_worker_first) and an
+      # unmatched URL (SPA fallback via env.ASSETS — 500s if the named env is
+      # missing the assets config, which the bindings table never shows).
+      - name: Smoke test (staging)
+        run: |
+          sleep 10
+          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/ | grep -q "Find Me"
+          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/no-such-page | grep -q "Find Me"
+          curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/privacy | grep -q "There are no accounts"
 
   deploy-production:
     needs: test
