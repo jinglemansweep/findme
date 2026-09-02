@@ -16,6 +16,7 @@ import { runExpirySweep } from "./cron";
 import { LivePin } from "./do/LivePin";
 import { EmailLimiter } from "./do/EmailLimiter";
 import { errorJson, html, withSecurityHeaders } from "./lib/http";
+import { withEnvLabel } from "./lib/envLabel";
 import { ipHash, rateLimitOk } from "./lib/ratelimit";
 import { isSlug } from "./lib/slug";
 import { controlShell } from "./shells/control";
@@ -31,38 +32,8 @@ export default {
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
     try {
-      if (path.startsWith("/api/")) return await handleApi(request, env, url);
-
-      if (path === "/tiles" || path.startsWith("/tiles/")) {
-        return withSecurityHeaders(await handleTiles(request, env, url), { csp: false });
-      }
-
-      if (path === "/privacy" && (request.method === "GET" || request.method === "HEAD")) {
-        const body = privacyShell(PRIVACY_MD, footerFrom(env));
-        return html(body, {
-          headers: {
-            "Cache-Control": "public, max-age=3600",
-            "X-Robots-Tag": "noindex",
-          },
-        });
-      }
-
-      if (path.startsWith("/u/")) {
-        if (request.method !== "GET" && request.method !== "HEAD") return errorJson(405, "method not allowed");
-        return await serveControlShell(request, env, url, path.slice(3));
-      }
-
-      const maybeSlug = path.slice(1);
-      if (request.method === "GET" && isSlug(maybeSlug)) {
-        return await servePublicShell(request, env, url, maybeSlug);
-      }
-
-      // Everything else (/, /assets/*, /favicon.svg, /robots.txt, …) belongs
-      // to the static asset layer; unmatched GETs fall back to the SPA.
-      if (request.method === "GET" || request.method === "HEAD") {
-        return env.ASSETS.fetch(request);
-      }
-      return errorJson(404, "not found");
+      const res = await route(request, env, url, path);
+      return env.ENV_LABEL ? await withEnvLabel(res, env.ENV_LABEL) : res;
     } catch (err) {
       console.error("unhandled error", err instanceof Error ? err.stack ?? err.message : err);
       return errorJson(500, "internal error");
@@ -73,6 +44,41 @@ export default {
     await runExpirySweep(env);
   },
 } satisfies ExportedHandler<Env>;
+
+async function route(request: Request, env: Env, url: URL, path: string): Promise<Response> {
+  if (path.startsWith("/api/")) return await handleApi(request, env, url);
+
+  if (path === "/tiles" || path.startsWith("/tiles/")) {
+    return withSecurityHeaders(await handleTiles(request, env, url), { csp: false });
+  }
+
+  if (path === "/privacy" && (request.method === "GET" || request.method === "HEAD")) {
+    const body = privacyShell(PRIVACY_MD, footerFrom(env));
+    return html(body, {
+      headers: {
+        "Cache-Control": "public, max-age=3600",
+        "X-Robots-Tag": "noindex",
+      },
+    });
+  }
+
+  if (path.startsWith("/u/")) {
+    if (request.method !== "GET" && request.method !== "HEAD") return errorJson(405, "method not allowed");
+    return await serveControlShell(request, env, url, path.slice(3));
+  }
+
+  const maybeSlug = path.slice(1);
+  if (request.method === "GET" && isSlug(maybeSlug)) {
+    return await servePublicShell(request, env, url, maybeSlug);
+  }
+
+  // Everything else (/, /assets/*, /favicon.svg, /robots.txt, …) belongs
+  // to the static asset layer; unmatched GETs fall back to the SPA.
+  if (request.method === "GET" || request.method === "HEAD") {
+    return env.ASSETS.fetch(request);
+  }
+  return errorJson(404, "not found");
+}
 
 function footerFrom(env: Env) {
   return { abuseEmail: env.ABUSE_EMAIL ?? null, privacyEmail: env.PRIVACY_EMAIL ?? null };

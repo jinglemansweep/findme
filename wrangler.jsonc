@@ -33,8 +33,8 @@
     "PMTILES_KEY": "uk.pmtiles",
     "TILES_MAXZOOM": "14",
     "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
-    "ABUSE_EMAIL": "abuse@narks.uk",
-    "PRIVACY_EMAIL": "privacy@narks.uk",
+    "ABUSE_EMAIL": "abuse@appts.uk",
+    "PRIVACY_EMAIL": "privacy@appts.uk",
     // Set to a Turnstile site key (and the secret via `wrangler secret put
     // TURNSTILE_SECRET`) to require a captcha on pin creation.
     "TURNSTILE_SITE_KEY": "",
@@ -82,10 +82,9 @@
     // restate the full set. Only d1 ids differ between them.
     "staging": {
       "name": "findme-staging",
-      // On the free workers.dev URL until narks.uk is on this Cloudflare
-      // account: https://findme-staging.<your-subdomain>.workers.dev
-      // (wrangler prints the exact URL on first deploy). Re-enable the
-      // custom domain route below when switching over.
+      // Live at https://find-stg.appts.uk (the workers.dev URL still works
+      // too). Staging is labelled "beta" via ENV_LABEL so it can't be
+      // mistaken for production.
       "workers_dev": true,
       "d1_databases": [
         {
@@ -102,10 +101,12 @@
         "PMTILES_KEY": "uk.pmtiles",
         "TILES_MAXZOOM": "14",
         "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
-        "ABUSE_EMAIL": "abuse@narks.uk",
-        "PRIVACY_EMAIL": "privacy@narks.uk",
+        "ABUSE_EMAIL": "abuse@appts.uk",
+        "PRIVACY_EMAIL": "privacy@appts.uk",
         "TURNSTILE_SITE_KEY": "",
         "KILL_SWITCH": "false",
+        // Marks every HTML response (title + header badge) as non-production.
+        "ENV_LABEL": "beta",
       },
       "durable_objects": {
         "bindings": [
@@ -153,8 +154,8 @@
         "PMTILES_KEY": "uk.pmtiles",
         "TILES_MAXZOOM": "14",
         "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
-        "ABUSE_EMAIL": "abuse@narks.uk",
-        "PRIVACY_EMAIL": "privacy@narks.uk",
+        "ABUSE_EMAIL": "abuse@appts.uk",
+        "PRIVACY_EMAIL": "privacy@appts.uk",
         "TURNSTILE_SITE_KEY": "",
         "KILL_SWITCH": "false",
       },

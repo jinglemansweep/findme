@@ -2,8 +2,9 @@
 
 _Last updated: [DATE]_
 
-Find Me lets you share your location with people you choose, for a limited time.
-It is built so that we hold as little about you as possible.
+Find Me (find.appts.uk) lets you share your location with people you choose,
+for a limited time. It is built so that we hold as little about you as
+possible.
 
 ## There are no accounts
 
@@ -89,13 +90,13 @@ link.
 ## Being tracked against your will
 
 If you believe this service is being used to track or harass you, contact
-**abuse@narks.uk**. Please include the link if you have it.
+**abuse@appts.uk**. Please include the link if you have it.
 
 If you are in immediate danger, contact the police on 999.
 
 ## Contact
 
-Questions about this notice: **privacy@narks.uk**
+Questions about this notice: **privacy@appts.uk**
 
 You also have the right to complain to the Information Commissioner's Office
 (ico.org.uk).

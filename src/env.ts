@@ -24,6 +24,9 @@ export interface Env {
   PRIVACY_EMAIL?: string;
   TURNSTILE_SITE_KEY?: string;
   KILL_SWITCH?: string;
+  /** Set (e.g. "beta") on non-production environments — marks every HTML
+   *  response's title and header so it can't be mistaken for production. */
+  ENV_LABEL?: string;
 
   // secrets
   IP_SALT?: string;
