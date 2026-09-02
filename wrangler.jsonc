@@ -133,7 +133,7 @@
       ],
       "limits": { "cpu_ms": 200 },
       "triggers": { "crons": ["*/10 * * * *"] },
-      // "routes": [{ "pattern": "staging.find.narks.uk", "custom_domain": true }],
+      "routes": [{ "pattern": "stg.find.appts.uk", "custom_domain": true }],
     },
     "production": {
       "name": "findme",
