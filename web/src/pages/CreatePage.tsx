@@ -3,6 +3,7 @@ import { api, ApiError } from "../api";
 import { CheckIcon, CloseIcon, CopyIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { Turnstile } from "../components/Turnstile";
+import { loadCreatedSession, storeCreatedSession } from "../lib/createdSession";
 import { copyText } from "../lib/clipboard";
 import { countdown, formatCoords, formatExpiry } from "../lib/format";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
@@ -17,31 +18,6 @@ const TTL_OPTIONS = [
   { value: 604_800, label: "7 days" },
 ];
 
-// The "your share is live" panel survives a round-trip to /privacy (and an
-// accidental refresh): the created pin is kept in sessionStorage until the
-// panel is closed or it expires.
-const CREATED_KEY = "findme.created.v1";
-
-function loadCreatedSession(): CreatedPin | null {
-  try {
-    const raw = sessionStorage.getItem(CREATED_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as CreatedPin;
-    return parsed.expiresAt > Date.now() ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function storeCreatedSession(pin: CreatedPin | null): void {
-  try {
-    if (pin) sessionStorage.setItem(CREATED_KEY, JSON.stringify(pin));
-    else sessionStorage.removeItem(CREATED_KEY);
-  } catch {
-    // Private browsing / storage full — the pin is still in the saved list.
-  }
-}
-
 export function CreatePage({ config }: { config: AppConfig }) {
   const [position, setPosition] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
@@ -54,9 +30,37 @@ export function CreatePage({ config }: { config: AppConfig }) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedPin | null>(() => loadCreatedSession());
+  const [created, setCreated] = useState<CreatedPin | null>(null);
   const [saved, setSaved] = useState<SavedPin[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Restore the "share is live" panel only if the pin really is still live —
+  // it may have been stopped or rotated from the control page since.
+  useEffect(() => {
+    const stored = loadCreatedSession();
+    if (!stored) return;
+    let cancelled = false;
+    api
+      .getMeta(stored.slug, stored.secret)
+      .then((meta) => {
+        if (cancelled) return;
+        if (meta.status === "active") setCreated(stored);
+        else storeCreatedSession(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        // Definitively gone (rotated secret / unknown slug) — drop it. On an
+        // inconclusive failure (offline, rate-limited) assume it is live.
+        if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+          storeCreatedSession(null);
+        } else {
+          setCreated(stored);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => setSaved(listSavedPins()), [created]);
 

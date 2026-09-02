@@ -3,6 +3,7 @@ import { api, ApiError } from "../api";
 import { CheckIcon, CopyIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
+import { clearCreatedSessionFor } from "../lib/createdSession";
 import { copyText } from "../lib/clipboard";
 import { countdown, formatExpiry, relativeAge } from "../lib/format";
 import { distanceMetres } from "../lib/geo";
@@ -119,7 +120,11 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
 }
 
 function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
-  useEffect(() => removeSavedPin(slug), [slug]);
+  useEffect(() => {
+    removeSavedPin(slug);
+    // The create page must not resurrect its "share is live" panel for this.
+    clearCreatedSessionFor(slug);
+  }, [slug]);
   return (
     <section className="state-card" data-state="ended">
       <h1>This share has ended</h1>
@@ -328,10 +333,12 @@ function ControlPanel(props: ControlPanelProps) {
     try {
       await api.stopPin(slug, secretRef.current);
       removeSavedPin(slug);
-      await onMetaChanged();
+      clearCreatedSessionFor(slug);
+      // Stopping is definitive — return to the create page for a fresh
+      // share instead of showing the ended card here.
+      location.assign("/");
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't stop the share.");
-    } finally {
       setBusy(null);
       setConfirmStop(false);
     }
@@ -346,6 +353,8 @@ function ControlPanel(props: ControlPanelProps) {
       secretRef.current = result.secret;
       const saved = getSavedPin(slug);
       if (saved) savePin({ ...saved, secret: result.secret });
+      // The stored create-page panel would link to the dead old control URL.
+      clearCreatedSessionFor(slug);
       setRotated({ privateUrl: result.privateUrl });
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't rotate the link.");
