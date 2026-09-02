@@ -235,6 +235,9 @@ describe("shells", () => {
     expect(html).toContain("There are no accounts");
     expect(html).not.toContain("[DATE]");
     expect(html).toContain("abuse@narks.uk");
+    // Hard-wrapped source lines join into one paragraph, not one <p> per line.
+    expect(html).toContain("dedicated to that single pin");
+    expect(html).toContain('class="button secondary small privacy-back"');
     // Including the bundle here would boot the create page over the article.
     expect(html).not.toContain("assets/app.js");
   });

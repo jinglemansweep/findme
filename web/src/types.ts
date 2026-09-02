@@ -49,4 +49,7 @@ export interface SavedPin {
   label: string | null;
   createdAt: number;
   expiresAt: number;
+  /** Pin position at creation — the display name fallback for untitled pins. */
+  lat?: number;
+  lng?: number;
 }

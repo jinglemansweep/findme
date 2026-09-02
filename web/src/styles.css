@@ -149,6 +149,18 @@ main {
   font-size: 0.85rem;
 }
 
+/* Icon-only buttons (copy/close): square, just an SVG inside. */
+.button.icon-button {
+  padding: 0.62rem 0;
+  width: 2.65rem;
+  flex: none;
+}
+
+.button.icon-button.copied {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
 .button-row {
   display: flex;
   gap: 0.6rem;
@@ -246,22 +258,6 @@ main {
   background: var(--paper);
 }
 
-.map-hint {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: calc(0.7rem + env(safe-area-inset-top));
-  max-width: calc(100% - 9.5rem);
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 999px;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-  box-shadow: var(--shadow);
-  pointer-events: none;
-  text-align: center;
-}
-
 /* Floating map controls live at the TOP of the map: the bottom is covered by
    the info sheet, so bottom-anchored buttons would hide behind it. */
 .map-button {
@@ -269,20 +265,6 @@ main {
   top: calc(0.7rem + env(safe-area-inset-top));
   left: 0.7rem;
   box-shadow: var(--shadow);
-}
-
-.map-button.confirm-move {
-  top: calc(3.6rem + env(safe-area-inset-top));
-}
-
-.map-button.active {
-  background: var(--brand);
-  color: #fff;
-  border-color: var(--brand);
-}
-
-.maplibregl-ctrl-attrib {
-  font-size: 0.7rem;
 }
 
 /* ---- view page ---- */
@@ -397,13 +379,6 @@ main {
   text-align: center;
 }
 
-.locate-button {
-  position: absolute;
-  top: calc(0.7rem + env(safe-area-inset-top));
-  left: 0.7rem;
-  box-shadow: var(--shadow);
-}
-
 .form-field {
   margin-bottom: 0.55rem;
 }
@@ -439,6 +414,20 @@ select {
   accent-color: var(--brand);
 }
 
+/* Collapsed help text (e.g. the recovery-email explanation) keeps the form
+   compact; the summary reads as a small link. */
+.help-details summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--brand-ink);
+  font-weight: 600;
+  margin-top: 0.3rem;
+}
+
+.help-details .field-note {
+  margin-bottom: 0.2rem;
+}
+
 .copy-row {
   display: flex;
   gap: 0.5rem;
@@ -462,6 +451,23 @@ select {
 
 .created-panel h1 {
   margin-top: 0;
+}
+
+/* Title row with the panel's X close button on the right. */
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.panel-header h1 {
+  flex: 1;
+  margin-top: 0;
+}
+
+.panel-close {
+  color: var(--ink-soft);
+  border-color: transparent;
 }
 
 .saved-pins {
@@ -551,6 +557,10 @@ select {
   padding: 0 1.2rem;
 }
 
+.prose .privacy-back {
+  margin-bottom: 0.6rem;
+}
+
 .prose h2 {
   font-size: 1.3rem;
   margin: 1.6rem 0 0.5rem;
@@ -584,21 +594,5 @@ select {
 @media (min-width: 800px) {
   .map-stack {
     min-height: 55dvh;
-  }
-}
-
-/* Kept last so it wins over the individual control rules above. On
-   containers < 640px MapLibre force-expands the attribution control into a
-   full-width bar at the top of the map, so the floating controls must sit
-   below that strip; on wider screens it collapses to an ⓘ button. */
-@media (max-width: 639px) {
-  .map-hint,
-  .map-button,
-  .locate-button {
-    top: calc(3.4rem + env(safe-area-inset-top));
-  }
-
-  .map-button.confirm-move {
-    top: calc(6.3rem + env(safe-area-inset-top));
   }
 }

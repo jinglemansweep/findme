@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api";
+import { CheckIcon, CloseIcon, CopyIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { Turnstile } from "../components/Turnstile";
 import { copyText } from "../lib/clipboard";
-import { countdown, formatExpiry } from "../lib/format";
+import { countdown, formatCoords, formatExpiry } from "../lib/format";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
 import { listSavedPins, savePin } from "../lib/storage";
 import type { AppConfig, CreatedPin, SavedPin } from "../types";
@@ -15,6 +16,31 @@ const TTL_OPTIONS = [
   { value: 86_400, label: "24 hours" },
   { value: 604_800, label: "7 days" },
 ];
+
+// The "your share is live" panel survives a round-trip to /privacy (and an
+// accidental refresh): the created pin is kept in sessionStorage until the
+// panel is closed or it expires.
+const CREATED_KEY = "findme.created.v1";
+
+function loadCreatedSession(): CreatedPin | null {
+  try {
+    const raw = sessionStorage.getItem(CREATED_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CreatedPin;
+    return parsed.expiresAt > Date.now() ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeCreatedSession(pin: CreatedPin | null): void {
+  try {
+    if (pin) sessionStorage.setItem(CREATED_KEY, JSON.stringify(pin));
+    else sessionStorage.removeItem(CREATED_KEY);
+  } catch {
+    // Private browsing / storage full — the pin is still in the saved list.
+  }
+}
 
 export function CreatePage({ config }: { config: AppConfig }) {
   const [position, setPosition] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
@@ -28,7 +54,7 @@ export function CreatePage({ config }: { config: AppConfig }) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<CreatedPin | null>(null);
+  const [created, setCreated] = useState<CreatedPin | null>(() => loadCreatedSession());
   const [saved, setSaved] = useState<SavedPin[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -74,7 +100,10 @@ export function CreatePage({ config }: { config: AppConfig }) {
         label: label.trim() || null,
         createdAt: Date.now(),
         expiresAt: result.expiresAt,
+        lat: position.lat,
+        lng: position.lng,
       });
+      storeCreatedSession(result);
       setCreated(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the pin. Check your connection and try again.");
@@ -84,6 +113,7 @@ export function CreatePage({ config }: { config: AppConfig }) {
   }
 
   function resetForNewPin() {
+    storeCreatedSession(null);
     setCreated(null);
     setPosition(null);
     setLabel("");
@@ -112,29 +142,6 @@ export function CreatePage({ config }: { config: AppConfig }) {
           }
           showAccuracy={false}
         />
-        {!created && (
-          <>
-            <div className="map-hint" aria-live="polite">
-              {position ? (
-                geoError ? (
-                  <span className="error-text">{geoError}</span>
-                ) : (
-                  "Pin placed. Tap elsewhere to move it."
-                )
-              ) : (
-                "Tap the map to drop a pin, or use your device's location."
-              )}
-            </div>
-            <button
-              className="button locate-button"
-              type="button"
-              onClick={useMyLocation}
-              disabled={locating}
-            >
-              {locating ? "Finding you…" : "Use my location"}
-            </button>
-          </>
-        )}
       </div>
 
       <div className="info-card" ref={cardRef}>
@@ -142,6 +149,18 @@ export function CreatePage({ config }: { config: AppConfig }) {
           <CreatedPanel created={created} onReset={resetForNewPin} />
         ) : (
           <>
+            <div className="form-field">
+              <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating}>
+                {locating ? "Finding you…" : "Use my location"}
+              </button>
+              <p className="field-note">or tap the map to place your pin</p>
+              {geoError && (
+                <p className="error-text" role="alert">
+                  {geoError}
+                </p>
+              )}
+            </div>
+
             <div className="form-field">
               <label htmlFor="label">Message (optional)</label>
               <input
@@ -176,18 +195,23 @@ export function CreatePage({ config }: { config: AppConfig }) {
                 <span>Email me a recovery link (optional)</span>
               </label>
               {emailEnabled && (
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
+                <>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                  <details className="help-details">
+                    <summary>Why?</summary>
+                    <p className="field-note">
+                      Sent once, right now, then the address is discarded. Only tick this if
+                      you might lose this browser's saved link.
+                    </p>
+                  </details>
+                </>
               )}
-              <p className="field-note">
-                Sent once, right now, then the address is discarded. Only tick this if
-                you might lose this browser's saved link.
-              </p>
             </div>
 
             {config.turnstileSiteKey && (
@@ -201,7 +225,7 @@ export function CreatePage({ config }: { config: AppConfig }) {
             )}
 
             <button className="button primary big" type="button" onClick={create} disabled={!canCreate}>
-              {creating ? "Creating…" : "Create share link"}
+              {creating ? "Sharing…" : "Share"}
             </button>
             <p className="field-note">
               Anyone with the share link can see this location until it expires.
@@ -233,7 +257,12 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
 
   return (
     <div className="created-panel">
-      <h1>Your share is live</h1>
+      <div className="panel-header">
+        <h1>Your share is live</h1>
+        <button className="button ghost icon-button panel-close" type="button" onClick={onReset} aria-label="Close">
+          <CloseIcon />
+        </button>
+      </div>
       <p className="field-note">
         Expires in {countdown(remaining)} ({formatExpiry(created.expiresAt)}).
       </p>
@@ -242,8 +271,14 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
         <h2>Send this to people</h2>
         <div className="copy-row">
           <input type="text" readOnly value={created.publicUrl} onFocus={(e) => e.target.select()} />
-          <button className="button primary" type="button" onClick={() => copy("public")}>
-            {copied === "public" ? "Copied ✓" : "Copy share link"}
+          <button
+            className={`button icon-button${copied === "public" ? " copied" : ""}`}
+            type="button"
+            onClick={() => copy("public")}
+            aria-label="Copy share link"
+            title="Copy share link"
+          >
+            {copied === "public" ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
       </div>
@@ -252,8 +287,14 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
         <h2>Your control link (already saved on this device)</h2>
         <div className="copy-row">
           <input type="text" readOnly value={created.privateUrl} onFocus={(e) => e.target.select()} />
-          <button className="button secondary" type="button" onClick={() => copy("private")}>
-            {copied === "private" ? "Copied ✓" : "Copy"}
+          <button
+            className={`button icon-button${copied === "private" ? " copied" : ""}`}
+            type="button"
+            onClick={() => copy("private")}
+            aria-label="Copy control link"
+            title="Copy control link"
+          >
+            {copied === "private" ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
         <p className="field-note warning">
@@ -274,11 +315,8 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
 
       <div className="button-row">
         <a className="button primary big" href={created.privateUrl}>
-          Open my control page
+          Edit
         </a>
-        <button className="button secondary" type="button" onClick={onReset}>
-          Create another
-        </button>
       </div>
     </div>
   );
@@ -295,7 +333,8 @@ function SavedPinsList({ saved }: { saved: SavedPin[] }) {
         {active.map((pin) => (
           <li key={pin.slug}>
             <a className="saved-link" href={`/u/${pin.slug}#s_${pin.secret}`}>
-              {pin.label || "Untitled pin"}
+              {pin.label ||
+                (pin.lat != null && pin.lng != null ? formatCoords(pin.lat, pin.lng, null) : "Untitled pin")}
             </a>
             <span className="field-note">expires in {countdown(pin.expiresAt - now)}</span>
           </li>

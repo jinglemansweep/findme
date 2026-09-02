@@ -2,7 +2,7 @@ import { escapeHtml } from "../lib/html";
 import { renderShell } from "./layout";
 
 // Bump this whenever PRIVACY.md changes materially.
-const NOTICE_UPDATED = "2026-09-01";
+const NOTICE_UPDATED = "2026-09-02";
 
 /**
  * Serves PRIVACY.md at /privacy. The renderer handles exactly the constructs
@@ -18,7 +18,7 @@ export function privacyShell(markdown: string, footer: { abuseEmail: string | nu
     // Fully server-rendered — including the SPA bundle here would boot the
     // create page over the article.
     includeApp: false,
-    content: `<article class="prose">${body}</article>`,
+    content: `<article class="prose"><a class="button secondary small privacy-back" href="/">&larr; Back</a>${body}</article>`,
     footer,
   });
 }
@@ -26,6 +26,8 @@ export function privacyShell(markdown: string, footer: { abuseEmail: string | nu
 export function renderMarkdown(markdown: string): string {
   const out: string[] = [];
   let listOpen = false;
+  // The source is hard-wrapped, so consecutive text lines are one paragraph.
+  let paragraph: string[] = [];
 
   const closeList = () => {
     if (listOpen) {
@@ -34,26 +36,37 @@ export function renderMarkdown(markdown: string): string {
     }
   };
 
+  const closeParagraph = () => {
+    if (paragraph.length > 0) {
+      out.push(`<p>${renderInline(paragraph.join(" "))}</p>`);
+      paragraph = [];
+    }
+  };
+
   for (const rawLine of markdown.split("\n")) {
     const line = rawLine.trimEnd();
     if (!line.trim()) {
       closeList();
+      closeParagraph();
       continue;
     }
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     if (heading) {
       closeList();
+      closeParagraph();
       const level = heading[1].length + 1; // the document's h1 becomes the page h2
       out.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
       continue;
     }
     if (/^---+$/.test(line.trim())) {
       closeList();
+      closeParagraph();
       out.push("<hr>");
       continue;
     }
     const bullet = /^[-*]\s+(.*)$/.exec(line);
     if (bullet) {
+      closeParagraph();
       if (!listOpen) {
         out.push("<ul>");
         listOpen = true;
@@ -62,9 +75,10 @@ export function renderMarkdown(markdown: string): string {
       continue;
     }
     closeList();
-    out.push(`<p>${renderInline(line)}</p>`);
+    paragraph.push(line.trim());
   }
   closeList();
+  closeParagraph();
   return out.join("\n");
 }
 

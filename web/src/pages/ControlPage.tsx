@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
+import { CheckIcon, CopyIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
 import { copyText } from "../lib/clipboard";
@@ -372,22 +373,6 @@ function ControlPanel(props: ControlPanelProps) {
           dimmed={watchState === "paused-hidden"}
           onMapClick={moveMode ? ({ lat, lng }) => setMoveTarget({ lat, lng }) : undefined}
         />
-        <button
-          className={`button map-button${moveMode ? " active" : ""}`}
-          type="button"
-          onClick={() => {
-            setMoveMode((m) => !m);
-            setMoveTarget(null);
-          }}
-          aria-pressed={moveMode}
-        >
-          {moveMode ? "Tap the map to choose a point" : "Move pin manually"}
-        </button>
-        {moveMode && moveTarget && (
-          <button className="button primary map-button confirm-move" type="button" onClick={moveToTarget} disabled={busy === "move"}>
-            {busy === "move" ? "Moving…" : "Move pin here"}
-          </button>
-        )}
       </div>
 
       <div className="info-card control-card" ref={cardRef}>
@@ -397,16 +382,22 @@ function ControlPanel(props: ControlPanelProps) {
           <strong>This is your private control page.</strong>
           <p>
             Anyone holding this link can move or stop your share — never paste
-            it into a chat. To let people follow you, use the{" "}
-            <em>Copy share link</em> button below.
+            it into a chat. To let people follow you, use the copy button
+            beside the share link below.
           </p>
         </div>
         <div className="copy-block primary-copy">
           <h2>Let people follow you</h2>
           <div className="copy-row">
             <input type="text" readOnly value={publicUrl} onFocus={(e) => e.target.select()} />
-            <button className="button primary big" type="button" onClick={copyShareLink}>
-              {copied ? "Copied ✓" : "Copy share link"}
+            <button
+              className={`button icon-button${copied ? " copied" : ""}`}
+              type="button"
+              onClick={copyShareLink}
+              aria-label="Copy share link"
+              title="Copy share link"
+            >
+              {copied ? <CheckIcon /> : <CopyIcon />}
             </button>
           </div>
           <p className="field-note">This is the safe link to paste into chats. It only shows your location.</p>
@@ -414,9 +405,42 @@ function ControlPanel(props: ControlPanelProps) {
 
         <div className="control-section">
           <h2>Your location</h2>
-          <button className="button primary" type="button" onClick={updateNow} disabled={updating}>
-            {updating ? "Getting a fix…" : "Update location now"}
-          </button>
+          <div className="button-row wrap">
+            <button className="button primary" type="button" onClick={updateNow} disabled={updating}>
+              {updating ? "Getting a fix…" : "Detect location"}
+            </button>
+            {moveMode ? (
+              <>
+                <button
+                  className="button secondary"
+                  type="button"
+                  onClick={moveToTarget}
+                  disabled={!moveTarget || busy === "move"}
+                >
+                  {busy === "move" ? "Moving…" : "Confirm?"}
+                </button>
+                <button
+                  className="button ghost"
+                  type="button"
+                  onClick={() => {
+                    setMoveMode(false);
+                    setMoveTarget(null);
+                  }}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button className="button secondary" type="button" onClick={() => setMoveMode(true)}>
+                Move pin manually
+              </button>
+            )}
+          </div>
+          {moveMode && (
+            <p className="field-note" role="status">
+              Tap the map to choose a point, then confirm.
+            </p>
+          )}
           <p className="field-note" role="status">
             {updateError
               ? updateError
@@ -438,13 +462,13 @@ function ControlPanel(props: ControlPanelProps) {
             />
             <span>Keep updating while this screen is open</span>
           </label>
-          <p className="field-note" role="status">
-            {watchState === "on"
-              ? "Updating automatically while this screen is open."
-              : watchState === "paused-hidden"
+          {autoUpdate && (
+            <p className="field-note" role="status">
+              {watchState === "paused-hidden"
                 ? "Paused — you switched away from this screen. Updates resume when you come back."
-                : "Off. Updating stops whenever you close or hide this screen — your phone can't share in the background."}
-          </p>
+                : "Updating automatically while this screen is open."}
+            </p>
+          )}
         </div>
 
         <div className="control-section">

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import {
-  AttributionControl,
   Map,
   Marker,
   type GeoJSONSource,
@@ -86,8 +85,8 @@ export function MapView(props: MapViewProps) {
       ...(config.basemap.kind === "pmtiles" && config.mapBounds
         ? { maxBounds: config.mapBounds as [[number, number], [number, number]] }
         : {}),
-      // Added manually on load, in the top-right corner — the default
-      // bottom-right position sits under the floating info sheet.
+      // No map attribution control: the OSM attribution lives in the page
+      // footer on every shell, keeping the map itself clear.
       attributionControl: false,
     });
     mapRef.current = map;
@@ -101,13 +100,6 @@ export function MapView(props: MapViewProps) {
     map.on("load", () => {
       if (!map.getStyle()) return;
       updatePadding();
-      map.addControl(
-        new AttributionControl({
-          compact: true,
-          customAttribution: "© OpenStreetMap contributors (ODbL)",
-        }),
-        "top-right",
-      );
       map.addSource("accuracy", { type: "geojson", data: emptyFeatureCollection() });
       map.addLayer({
         id: "accuracy-fill",
