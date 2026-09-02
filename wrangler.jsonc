@@ -184,7 +184,7 @@
       ],
       "limits": { "cpu_ms": 200 },
       "triggers": { "crons": ["*/10 * * * *"] },
-      // "routes": [{ "pattern": "find.narks.uk", "custom_domain": true }],
+      "routes": [{ "pattern": "find.appts.uk", "custom_domain": true }],
     },
   },
 }
