@@ -1,7 +1,7 @@
 import type { Env } from "../env";
 import { bufferToHex } from "../lib/auth";
 
-const SENDER = "noreply@mail.narks.uk";
+const SENDER = "noreply@find.appts.uk";
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@.]+(\.[^\s@.]+)+$/;
 

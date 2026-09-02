@@ -71,9 +71,10 @@
   ],
   "send_email": [
     // Sender restricted, destination unrestricted. Requires the sending
-    // domain (mail.narks.uk) to be onboarded (PLAN.md §9). Add "remote":
-    // true to this binding for local dev when working on email.
-    { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+    // address to be sendable via Cloudflare Email Routing on the appts.uk
+    // zone (see PLAN.md §9). Add "remote": true to this binding for local
+    // dev when working on email.
+    { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] },
   ],
   "limits": { "cpu_ms": 200 },
   "triggers": { "crons": ["*/10 * * * *"] },
@@ -133,7 +134,7 @@
         },
       ],
       "send_email": [
-        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] },
       ],
       "limits": { "cpu_ms": 200 },
       "triggers": { "crons": ["*/10 * * * *"] },
@@ -184,7 +185,7 @@
         },
       ],
       "send_email": [
-        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] },
+        { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] },
       ],
       "limits": { "cpu_ms": 200 },
       "triggers": { "crons": ["*/10 * * * *"] },
