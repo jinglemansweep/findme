@@ -75,6 +75,26 @@ export function CreatePage({ config }: { config: AppConfig }) {
 
   useEffect(() => setSaved(listSavedPins()), [created]);
 
+  // Offer the visitor's location as soon as the form opens rather than
+  // waiting for the button: an undecided permission raises the browser
+  // prompt, a granted one fixes silently, and a denied one stays quiet (the
+  // button and map tap remain). Skipped when a share is about to restore.
+  useEffect(() => {
+    if (!("geolocation" in navigator) || loadCreatedSession()) return;
+    let cancelled = false;
+    navigator.permissions
+      .query({ name: "geolocation" })
+      .then((status) => {
+        if (!cancelled && status.state !== "denied") void useMyLocation();
+      })
+      .catch(() => {
+        // Permissions API missing or picky — the button stays the path.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const canCreate = Boolean(position) && !creating && (!config.turnstileSiteKey || Boolean(turnstileToken));
 
   async function useMyLocation() {
