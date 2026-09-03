@@ -387,7 +387,16 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
 
 function SavedPinsList({ saved }: { saved: SavedPin[] }) {
   const now = Date.now();
-  const active = useMemo(() => saved.filter((p) => p.expiresAt > now), [saved, now]);
+  // Newest first, capped at the 3 most recent shares; older ones stay stored
+  // on the device but are not listed here.
+  const active = useMemo(
+    () =>
+      saved
+        .filter((p) => p.expiresAt > now)
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, 3),
+    [saved, now],
+  );
   if (active.length === 0) return null;
   return (
     <div className="saved-pins">

@@ -466,6 +466,13 @@ main {
   display: block;
 }
 
+/* Left-aligned variant: the popover grows rightward from icons near the
+   left edge, where right-anchoring would clip off screen. */
+.info-tip.pop-left .info-tip-pop {
+  right: auto;
+  left: -0.25rem;
+}
+
 input[type="text"],
 input[type="email"],
 select {
@@ -539,6 +546,19 @@ select {
 }
 
 .label-row h2 {
+  margin: 0;
+}
+
+/* Title-less expiry section: extend button, live countdown, and the exact
+   end time (in the tooltip) share one row. */
+.expiry-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.expiry-row .expiry-note {
+  flex: none;
   margin: 0;
 }
 
@@ -623,6 +643,30 @@ select {
   margin: 0.15rem 0 0;
   font-size: 0.82rem;
   color: #d8d0c2;
+}
+
+/* Title left, advisory tooltip beside it, top-level Stop sharing control
+   right — one centred row. */
+.banner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.banner-stop {
+  flex: none;
+}
+
+/* The ghost tooltip button is dark-on-dark inside the banner — lighten it. */
+.control-banner .info-tip-button {
+  color: #d8d0c2;
+}
+
+/* The stop confirmation attaches directly to the banner's Stop button. */
+.control-banner .confirm-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(242, 236, 226, 0.25);
 }
 
 .control-section {

@@ -17,9 +17,9 @@ import type { AppConfig, PinMeta } from "../types";
  * The private control page (booted from /u/:slug#s_…). The secret is read
  * from the fragment, stripped from the URL, and held in memory only.
  *
- * Manual update is the primary control; the auto-update toggle is honest
- * about what it does ("Keep updating while this screen is open") and stops
- * on visibilitychange→hidden, saying so (§4).
+ * Manual update is the primary control; the auto-update toggle ("Keep
+ * updating", with a tooltip spelling out the limit) stops on
+ * visibilitychange→hidden, saying so (§4).
  */
 
 const AUTO_MOVE_METRES = 15;
@@ -174,7 +174,6 @@ function ControlPanel(props: ControlPanelProps) {
   const [moveMode, setMoveMode] = useState(false);
   const [moveTarget, setMoveTarget] = useState<{ lat: number; lng: number } | null>(null);
 
-  const [labelDraft, setLabelDraft] = useState(meta.label ?? "");
   const [remaining, setRemaining] = useState(meta.expiresAt - Date.now());
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -189,8 +188,6 @@ function ControlPanel(props: ControlPanelProps) {
     }, 1_000);
     return () => window.clearInterval(t);
   }, [meta.expiresAt]);
-
-  useEffect(() => setLabelDraft(meta.label ?? ""), [meta.label]);
 
   const sendPosition = useCallback(
     async (pos: { lat: number; lng: number; accuracy: number | null }) => {
@@ -301,20 +298,6 @@ function ControlPanel(props: ControlPanelProps) {
     }
   }
 
-  async function saveLabel() {
-    if (!secretRef.current) return;
-    setBusy("label");
-    setActionError(null);
-    try {
-      await api.patchPin(slug, secretRef.current, { label: labelDraft.trim() || null });
-      await onMetaChanged();
-    } catch (err) {
-      setActionError(err instanceof ApiError ? err.message : "Couldn't save the message.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function extend(ttlSeconds: number) {
     if (!secretRef.current) return;
     setBusy(`extend-${ttlSeconds}`);
@@ -399,11 +382,38 @@ function ControlPanel(props: ControlPanelProps) {
       </div>
 
       <div className="info-card control-card" ref={cardRef}>
-        {/* Sticky at the top of the card: the warning stays visible even when
-            the controls below are scrolled (§3 anti-footgun). */}
+        {/* Sticky at the top of the card: the title and the top-level Stop
+            control stay visible even when the controls below are scrolled
+            (§3 anti-footgun). */}
         <div className="control-banner" role="note">
-          <strong>This is your private control page.</strong>
-          <p>Anyone holding this link can move or stop your share — never paste it into a chat.</p>
+          <div className="banner-row">
+            <strong>Control Page</strong>
+            <InfoTooltip
+              label="About the control page"
+              text="Anyone holding this link can move or stop your share — never paste it into a chat."
+            />
+            <button
+              className="button danger small banner-stop"
+              type="button"
+              onClick={() => setConfirmStop(true)}
+              disabled={busy === "stop"}
+            >
+              {busy === "stop" ? "Stopping…" : "Stop sharing"}
+            </button>
+          </div>
+          {confirmStop && (
+            <div className="confirm-row">
+              <p>Stop sharing now? Your location is deleted and viewers see that the share has ended.</p>
+              <div className="button-row">
+                <button className="button danger" type="button" onClick={stop} disabled={busy === "stop"}>
+                  {busy === "stop" ? "Stopping…" : "Yes, stop sharing"}
+                </button>
+                <button className="button ghost" type="button" onClick={() => setConfirmStop(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         <div className="copy-block">
           <div className="label-row">
@@ -488,15 +498,23 @@ function ControlPanel(props: ControlPanelProps) {
                   : "No location shared yet"}
           </p>
 
-          <label className="toggle-row" htmlFor="auto-update">
-            <input
-              id="auto-update"
-              type="checkbox"
-              checked={autoUpdate}
-              onChange={(e) => setAutoUpdate(e.target.checked)}
+          {/* The tooltip lives outside the <label>: a click inside a label
+              toggles the checkbox. */}
+          <div className="toggle-row">
+            <label className="toggle-row" htmlFor="auto-update">
+              <input
+                id="auto-update"
+                type="checkbox"
+                checked={autoUpdate}
+                onChange={(e) => setAutoUpdate(e.target.checked)}
+              />
+              <span>Keep updating</span>
+            </label>
+            <InfoTooltip
+              label="About keep updating"
+              text="Your location updates automatically while this screen stays open and active — switching to another tab or app pauses it until you return."
             />
-            <span>Keep updating while this screen is open</span>
-          </label>
+          </div>
           {autoUpdate && (
             <p className="field-note" role="status">
               {watchState === "paused-hidden"
@@ -507,47 +525,22 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section">
-          <h2>Message</h2>
-          <div className="copy-row">
-            <input
-              type="text"
-              maxLength={140}
-              value={labelDraft}
-              onChange={(e) => setLabelDraft(e.target.value)}
-              placeholder="e.g. Meet me at the car"
-            />
-            <button className="button secondary" type="button" onClick={saveLabel} disabled={busy === "label" || labelDraft === (meta.label ?? "")}>
-              {busy === "label" ? "Saving…" : "Save"}
-            </button>
-          </div>
-        </div>
-
-        <div className="control-section">
-          <div className="label-row">
-            <h2>Expiry</h2>
-            <InfoTooltip
-              label="About expiry"
-              text="Extend adds time from now. A share can last at most 7 days from the current moment."
-            />
-          </div>
-          <p className="field-note">
-            Expires in {countdown(remaining)} — {formatExpiry(meta.expiresAt)}
-          </p>
-          <div className="button-row wrap">
+          <div className="expiry-row">
             <button className="button secondary" type="button" onClick={() => extend(3_600)} disabled={busy?.startsWith("extend") ?? false}>
               +1 hour
             </button>
-            <button className="button secondary" type="button" onClick={() => extend(14_400)} disabled={busy?.startsWith("extend") ?? false}>
-              +4 hours
-            </button>
-            <button className="button secondary" type="button" onClick={() => extend(86_400)} disabled={busy?.startsWith("extend") ?? false}>
-              +24 hours
-            </button>
+            <p className="field-note expiry-note">
+              {remaining > 0 ? `${countdown(remaining)} left` : "expired"}
+            </p>
+            <InfoTooltip
+              label="Expiry time"
+              text={`Ends ${formatExpiry(meta.expiresAt)} — extending adds time from now, up to a 7-day maximum.`}
+            />
           </div>
         </div>
 
         <div className="control-section danger-zone">
-          <h2>Danger zone</h2>
+          <h2>Link safety</h2>
           {rotated ? (
             <div className="copy-block">
               <p className="field-note">New control link (saved on this device, old one no longer works):</p>
@@ -567,27 +560,10 @@ function ControlPanel(props: ControlPanelProps) {
                 </button>
               </div>
             </div>
-          ) : confirmStop ? (
-            <div className="confirm-row">
-              <p>Stop sharing now? Your location is deleted and viewers see that the share has ended.</p>
-              <div className="button-row">
-                <button className="button danger" type="button" onClick={stop} disabled={busy === "stop"}>
-                  {busy === "stop" ? "Stopping…" : "Yes, stop sharing"}
-                </button>
-                <button className="button ghost" type="button" onClick={() => setConfirmStop(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
           ) : (
-            <div className="button-row wrap">
-              <button className="button secondary" type="button" onClick={() => setConfirmRotate(true)}>
-                Replace control link
-              </button>
-              <button className="button danger" type="button" onClick={() => setConfirmStop(true)}>
-                Stop sharing
-              </button>
-            </div>
+            <button className="button secondary" type="button" onClick={() => setConfirmRotate(true)}>
+              Replace control link
+            </button>
           )}
         </div>
 
