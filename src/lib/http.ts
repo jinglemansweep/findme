@@ -13,6 +13,19 @@ export function errorJson(status: number, error: string): Response {
   return json({ error }, { status });
 }
 
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
+
+/**
+ * Plain-HTTP traffic is bounced to https before any routing. 308 rather than
+ * 301 so API POSTs keep their method and body. Local dev hosts are exempt —
+ * wrangler serves plain http on localhost.
+ */
+export function redirectToHttps(url: URL): Response | null {
+  if (url.protocol !== "http:" || LOCAL_HOSTS.has(url.hostname)) return null;
+  url.protocol = "https:";
+  return Response.redirect(url.toString(), 308);
+}
+
 /**
  * The SPA boots from a JSON script tag, so executable inline scripts are not
  * needed and the CSP can be strict. MapLibre spins up workers from blob URLs

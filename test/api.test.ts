@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { exports } from "cloudflare:workers";
+import { redirectToHttps } from "../src/lib/http";
 
 // Each request uses a distinct CF-Connecting-IP: the native rate limiters
 // key on its hash, and the suite would otherwise exhaust the per-IP creation
@@ -247,5 +248,27 @@ describe("shells", () => {
     expect(status).toBe(200);
     expect(["pmtiles", "style"]).toContain(body.basemap.kind);
     expect(body.turnstileSiteKey).toBeNull();
+  });
+});
+
+describe("http to https", () => {
+  // The test harness rewrites non-localhost hosts before dispatch, so the
+  // 308 is checked against the helper directly; the handler test pins the
+  // localhost exemption that local dev (and this suite) rely on.
+  it("308-redirects plain http, preserving path and query", () => {
+    const res = redirectToHttps(new URL("http://find.appts.uk/0123456789AB?x=1"));
+    expect(res?.status).toBe(308);
+    expect(res?.headers.get("Location")).toBe("https://find.appts.uk/0123456789AB?x=1");
+  });
+
+  it("leaves already-https and local dev hosts alone", () => {
+    expect(redirectToHttps(new URL("https://find.appts.uk/0123456789AB"))).toBeNull();
+    expect(redirectToHttps(new URL("http://localhost/0123456789AB"))).toBeNull();
+    expect(redirectToHttps(new URL("http://127.0.0.1:8787/0123456789AB"))).toBeNull();
+  });
+
+  it("does not redirect plain-http localhost through the handler", async () => {
+    const res = await exports.default.fetch(new Request("http://localhost/0123456789AB"));
+    expect([301, 302, 307, 308]).not.toContain(res.status);
   });
 });

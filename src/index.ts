@@ -15,7 +15,7 @@ import { handleConfig } from "./api/config";
 import { runExpirySweep } from "./cron";
 import { LivePin } from "./do/LivePin";
 import { EmailLimiter } from "./do/EmailLimiter";
-import { errorJson, html, withSecurityHeaders } from "./lib/http";
+import { errorJson, html, redirectToHttps, withSecurityHeaders } from "./lib/http";
 import { withEnvLabel } from "./lib/envLabel";
 import { ipHash, rateLimitOk } from "./lib/ratelimit";
 import { isSlug } from "./lib/slug";
@@ -29,6 +29,10 @@ export { EmailLimiter, LivePin };
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    const httpsOnly = redirectToHttps(url);
+    if (httpsOnly) return httpsOnly;
+
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
     try {
