@@ -12,14 +12,13 @@ Companion to `docs/TILES.md`, which covers the basemap specifically.
 | Environment | Worker | D1 | Domain |
 | --- | --- | --- | --- |
 | local | `wrangler dev` | local Miniflare D1 | `localhost:8787` |
-| staging | `findme-staging` | `findme-staging` | `findme-staging.<subdomain>.workers.dev` (custom domain `staging.find.narks.uk` once `narks.uk` is on the account) |
-| production | `findme` | `findme` | `findme.<subdomain>.workers.dev` (custom domain `find.narks.uk` later) |
+| staging | `findme-staging` | `findme-staging` | `find-stg.appts.uk` (custom domain; `findme-staging.<subdomain>.workers.dev` also works) |
+| production | `findme` | `findme` | `find.appts.uk` (custom domain; `findme.<subdomain>.workers.dev` also works) |
 
-Until the custom domains are attached, both environments serve from their
-`workers.dev` URLs — see yours under Workers → your Worker → Settings → Domains
-& Routes. Switching over is uncommenting the `routes` block in
-`wrangler.jsonc` and redeploying; the Worker stays reachable on both origins,
-though share links are only as durable as the origin they were minted with.
+Both environments serve from their custom domains (the `routes` blocks in
+`wrangler.jsonc`) and stay reachable on their `workers.dev` URLs — see yours
+under Workers → your Worker → Settings → Domains & Routes. Share links are
+only as durable as the origin they were minted with.
 
 Separate D1 databases per environment. Never point staging at production data —
 the whole point of the retention story is that production data is short-lived and
@@ -136,11 +135,12 @@ path is broken.
 
 Note that sends via `send_email` appear as **dropped** in the Email Routing
 summary even when delivered. Use Email Service sending metrics instead. Check
-whether the daily quota has been hit — new accounts start conservative.
+whether the daily quota has been hit — new accounts start conservative. If
+sends fail outright, see §8 — the domain may not be onboarded.
 
 ### Abuse report received
 
-Reports arrive at `abuse@narks.uk`, usually with a pin link.
+Reports arrive at `abuse@appts.uk`, usually with a pin link.
 
 1. Take the slug from the link.
 2. `UPDATE pins SET status='stopped' WHERE slug=?` **and** call `stop()` on the
@@ -183,3 +183,27 @@ wrangler secret put IP_SALT --env production
 
 Rotating `IP_SALT` invalidates in-flight rate limit counters. Harmless, but
 expect a brief window where limits reset.
+
+---
+
+## 8. Email sending setup
+
+One-time Cloudflare setup for the recovery email. Until the sending domain is
+onboarded, every send fails with `E_SENDER_DOMAIN_NOT_AVAILABLE` (or, on
+unonboarded accounts, only reaches verified destination addresses).
+
+1. Dashboard → Email Service → Email Sending → **Onboard Domain**, choose
+   `appts.uk`, review the records, Done.
+2. Cloudflare adds them itself: MX ×3 and SPF on `cf-bounce.appts.uk`, DKIM on
+   `cf-bounce._domainkey.appts.uk`, DMARC at `_dmarc.appts.uk` (start with
+   `none` — monitor mode). Propagation usually takes 5–15 minutes.
+3. Verify from staging: create a pin with an address you own; the create
+   response should report `"email": "sent"` and the mail should arrive.
+
+Failure signatures in the create response: `"failed"` means the send threw —
+check Workers Logs for the error code (`E_SENDER_DOMAIN_NOT_AVAILABLE` = domain
+not onboarded; `E_SENDER_NOT_VERIFIED` = the subdomain sender is not accepted,
+in which case switch to `noreply@appts.uk`). `"skipped"` means there is no
+`EMAIL` binding — a named env is missing its `send_email` block. The sender
+lives in two places that must agree: `SENDER` in `src/email/send.ts` and
+`allowed_sender_addresses` in all three `wrangler.jsonc` env blocks.

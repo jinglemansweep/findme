@@ -147,8 +147,8 @@ wrangler deploy --env production
 ### 3.7 Verify end to end
 
 ```bash
-curl -sI https://find.narks.uk/tiles/8/125/80.mvt   # expect 200 + Cache-Control
-curl -s  https://find.narks.uk/tiles/tiles.json     # TileJSON for MapLibre
+curl -sI https://find.appts.uk/tiles/8/125/80.mvt   # expect 200 + Cache-Control
+curl -s  https://find.appts.uk/tiles/tiles.json     # TileJSON for MapLibre
 ```
 
 Then load the app and check, in order: tiles render, **labels appear**, icons

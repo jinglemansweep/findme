@@ -74,11 +74,11 @@ core privacy claim and it should stay true.
 ## 3. URL scheme
 
 ```
-https://find.narks.uk/aBc123XyZq9k             public — view, exact location
-https://find.narks.uk/u/aBc123XyZq9k#s_<key>   private — update, extend, stop
+https://find.appts.uk/aBc123XyZq9k             public — view, exact location
+https://find.appts.uk/u/aBc123XyZq9k#s_<key>   private — update, extend, stop
 ```
 
-Served from a Worker custom domain route on `find.narks.uk/*`. `narks.uk` must
+Served from a Worker custom domain route on `find.appts.uk/*`. `appts.uk` must
 be on Cloudflare DNS.
 
 - **Slug**: 12 chars, Crockford base32 (no `I`/`L`/`O`/`U`), ~60 bits.
@@ -330,13 +330,13 @@ reach verified destination addresses on your account; **after** onboarding, it
 can send to any recipient. Onboard the domain during setup or early testing will
 fail misleadingly.
 
-Send from a **subdomain** (`mail.narks.uk`), not the apex. A new app sending
+Send from a **subdomain** (`find.appts.uk`), not the apex. A new app sending
 transactional mail with bare links is exactly the profile that attracts
-reputation damage, and you do not want that landing on `narks.uk` itself.
+reputation damage, and you do not want that landing on `appts.uk` itself.
 
 ```jsonc
 "send_email": [
-  { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] }
+  { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] }
 ]
 ```
 
@@ -345,7 +345,7 @@ to actually send rather than no-op.
 
 ```js
 await env.EMAIL.send({
-  from: 'noreply@mail.narks.uk',
+  from: 'noreply@find.appts.uk',
   to: address,
   subject: 'Your location link',
   text: body,
@@ -435,7 +435,7 @@ tags.
   shells. It is a **launch blocker, not polish** — write it in phase 1 while the
   design decisions are fresh rather than reconstructing them later. The
   architecture has already made it a short document.
-- **Abuse contact.** `abuse@narks.uk`, linked in the footer and named in the
+- **Abuse contact.** `abuse@appts.uk`, linked in the footer and named in the
   privacy notice. The §11 coercive-use mitigations are otherwise entirely
   technical: if someone is being tracked through this service there must be a way
   to reach a human. Handling procedure is in `docs/RUNBOOK.md` §5 — note that
@@ -483,7 +483,7 @@ Detect platform and surface the two or three that make sense, not all five.
     "PMTILES_KEY": "uk.pmtiles",
     "TILES_MAXZOOM": "14",
     "MAP_BOUNDS": "-8.65,49.84,1.77,60.86",
-    "ABUSE_EMAIL": "abuse@narks.uk"
+    "ABUSE_EMAIL": "abuse@appts.uk"
   },
   "durable_objects": {
     "bindings": [
@@ -501,7 +501,7 @@ Detect platform and surface the two or three that make sense, not all five.
       "simple": { "limit": 10, "period": 60 } }
   ],
   "send_email": [
-    { "name": "EMAIL", "allowed_sender_addresses": ["noreply@mail.narks.uk"] }
+    { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] }
   ],
   "limits": { "cpu_ms": 200 },
   "triggers": { "crons": ["*/10 * * * *"] }
@@ -596,7 +596,8 @@ rediscovery every time.
    MapLibre style, glyphs and sprites in R2, ODbL attribution. Write
    `docs/TILES.md` as this is built, not afterwards. Planet upgrade stays a
    config flip.
-4. **Recovery & polish.** Email link send (onboard `mail.narks.uk` first),
+4. **Recovery & polish.** Email link send (onboard `appts.uk` in Email Service
+   first),
    secret rotation, TTL extension, PWA manifest, budget alerts (§17),
    edge-cache the position read if load warrants.
 
