@@ -3,6 +3,7 @@ web/dist/
 web/public/vendor/
 .wrangler/
 .dev.vars
+.zcode/
 *.log
 .DS_Store
 coverage/
