@@ -385,9 +385,9 @@ function ControlPanel(props: ControlPanelProps) {
         {/* Sticky at the top of the card: the title and the top-level Stop
             control stay visible even when the controls below are scrolled
             (§3 anti-footgun). */}
-        <div className="control-banner" role="note">
+        <div className="panel-banner" role="note">
           <div className="banner-row">
-            <strong>Control Page</strong>
+            <strong>Share Control</strong>
             <InfoTooltip
               label="About the control page"
               text="Anyone holding this link can move or stop your share — never paste it into a chat."

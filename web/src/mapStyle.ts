@@ -13,10 +13,72 @@ import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
 
 const FONT = ["Noto Sans Regular"];
 
-const INK = "#57534b";
-const HALO = "#ffffff";
+export type Scheme = "light" | "dark";
 
-export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
+/**
+ * Basemap paint palettes. The same PMTiles serve both schemes — only the
+ * paint colours differ, so dark mode costs no extra tile hosting.
+ */
+const PALETTES: Record<Scheme, {
+  bg: string;
+  landcover: string;
+  landuse: string;
+  water: string;
+  building: string;
+  casing: Record<Tier, string>;
+  road: Record<Exclude<Tier, "rail">, string>;
+  boundaryMinor: string;
+  boundaryCountry: string;
+  ink: string;
+  inkSoft: string;
+  inkFaint: string;
+  halo: string;
+}> = {
+  light: {
+    bg: "#f2efe9",
+    landcover: "#e5edda",
+    landuse: "#dfebd3",
+    water: "#a9c6da",
+    building: "#e0dbd2",
+    casing: { minor: "#d8d2c7", mid: "#e3cfa0", major: "#dda752", rail: "#c8c2b6" },
+    road: { minor: "#ffffff", mid: "#fce9b8", major: "#f5c269" },
+    boundaryMinor: "#ccc4b4",
+    boundaryCountry: "#b9af9e",
+    ink: "#57534b",
+    inkSoft: "#6b665d",
+    inkFaint: "#8a857b",
+    halo: "#ffffff",
+  },
+  dark: {
+    bg: "#191613",
+    landcover: "#20251a",
+    landuse: "#242b1d",
+    water: "#2c4257",
+    building: "#26211a",
+    casing: { minor: "#221e18", mid: "#4a3f2b", major: "#6a562c", rail: "#322d26" },
+    road: { minor: "#2e2a23", mid: "#55492e", major: "#8a6f33" },
+    boundaryMinor: "#453f33",
+    boundaryCountry: "#57503f",
+    ink: "#c9c1b2",
+    inkSoft: "#948c7c",
+    inkFaint: "#7d766a",
+    halo: "#191613",
+  },
+};
+
+export function preferredScheme(): Scheme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+/** Marker + accuracy-circle colours that read against the basemap. */
+export function mapUiColors(scheme: Scheme): { marker: string; accuracyFill: string } {
+  return scheme === "dark"
+    ? { marker: "#e0574d", accuracyFill: "#2e9c8a" }
+    : { marker: "#b3261e", accuracyFill: "#175e54" };
+}
+
+export function buildPmtilesStyle(tilesUrl: string, scheme: Scheme = "light"): StyleSpecification {
+  const p = PALETTES[scheme];
   return {
     version: 8,
     name: "Find Me basemap",
@@ -25,35 +87,35 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
       basemap: { type: "vector", url: tilesUrl },
     },
     layers: [
-      { id: "background", type: "background", paint: { "background-color": "#f2efe9" } },
+      { id: "background", type: "background", paint: { "background-color": p.bg } },
 
       {
         id: "base-earth",
         type: "fill",
         source: "basemap",
         "source-layer": "earth",
-        paint: { "fill-color": "#f2efe9" },
+        paint: { "fill-color": p.bg },
       },
       {
         id: "base-landcover",
         type: "fill",
         source: "basemap",
         "source-layer": "landcover",
-        paint: { "fill-color": "#e5edda", "fill-opacity": 0.85 },
+        paint: { "fill-color": p.landcover, "fill-opacity": 0.85 },
       },
       {
         id: "base-landuse",
         type: "fill",
         source: "basemap",
         "source-layer": "landuse",
-        paint: { "fill-color": "#dfebd3" },
+        paint: { "fill-color": p.landuse },
       },
       {
         id: "base-water",
         type: "fill",
         source: "basemap",
         "source-layer": "water",
-        paint: { "fill-color": "#a9c6da" },
+        paint: { "fill-color": p.water },
       },
       {
         id: "base-waterway",
@@ -61,7 +123,7 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
         source: "basemap",
         "source-layer": "waterway",
         paint: {
-          "line-color": "#a9c6da",
+          "line-color": p.water,
           "line-width": ["interpolate", ["linear"], ["zoom"], 10, 0.4, 14, 1.6, 16, 3],
         },
       },
@@ -71,16 +133,16 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
         source: "basemap",
         "source-layer": "building",
         minzoom: 13,
-        paint: { "fill-color": "#e0dbd2" },
+        paint: { "fill-color": p.building },
       },
 
-      roadLayer("base-road-minor-casing", "minor", "#d8d2c7", [0, 0, 13, 0.5, 16, 4]),
-      roadLayer("base-road-mid-casing", "mid", "#e3cfa0", [8, 0.4, 13, 1, 16, 6]),
-      roadLayer("base-road-major-casing", "major", "#dda752", [6, 0.5, 13, 1.3, 16, 7]),
-      roadLayer("base-road-rail", "rail", "#c8c2b6", [10, 0.5, 14, 1.4, 16, 2.4]),
-      roadLayer("base-road-minor", "minor", "#ffffff", [11, 0.5, 13, 1, 16, 3.5]),
-      roadLayer("base-road-mid", "mid", "#fce9b8", [8, 0.4, 13, 1, 16, 5.5]),
-      roadLayer("base-road-major", "major", "#f5c269", [6, 0.5, 13, 1.2, 16, 6.5]),
+      roadLayer("base-road-minor-casing", "minor", p.casing.minor, [0, 0, 13, 0.5, 16, 4]),
+      roadLayer("base-road-mid-casing", "mid", p.casing.mid, [8, 0.4, 13, 1, 16, 6]),
+      roadLayer("base-road-major-casing", "major", p.casing.major, [6, 0.5, 13, 1.3, 16, 7]),
+      roadLayer("base-road-rail", "rail", p.casing.rail, [10, 0.5, 14, 1.4, 16, 2.4]),
+      roadLayer("base-road-minor", "minor", p.road.minor, [11, 0.5, 13, 1, 16, 3.5]),
+      roadLayer("base-road-mid", "mid", p.road.mid, [8, 0.4, 13, 1, 16, 5.5]),
+      roadLayer("base-road-major", "major", p.road.major, [6, 0.5, 13, 1.2, 16, 6.5]),
 
       {
         id: "base-boundary-minor",
@@ -88,7 +150,7 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
         source: "basemap",
         "source-layer": "boundary",
         filter: ["!=", ["get", "kind"], "country"],
-        paint: { "line-color": "#ccc4b4", "line-width": 0.6 },
+        paint: { "line-color": p.boundaryMinor, "line-width": 0.6 },
       },
       {
         id: "base-boundary-country",
@@ -96,15 +158,15 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
         source: "basemap",
         "source-layer": "boundary",
         filter: ["==", ["get", "kind"], "country"],
-        paint: { "line-color": "#b9af9e", "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 10, 1.4] },
+        paint: { "line-color": p.boundaryCountry, "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 10, 1.4] },
       },
 
-      placeLayer("base-place-continent", "continent", 13, "#8a857b", true),
-      placeLayer("base-place-country", "country", 12, "#6b665d", false),
-      placeLayer("base-place-state", "state", 11, "#6b665d", false),
-      placeLayer("base-place-city", "city", 12.5, INK, false),
-      placeLayer("base-place-town", "town", 11.5, INK, false),
-      placeLayer("base-place-small", "village/locality/neighbourhood", 10.5, "#6b665d", false),
+      placeLayer("base-place-continent", "continent", 13, p.inkFaint, p.halo, true),
+      placeLayer("base-place-country", "country", 12, p.inkSoft, p.halo, false),
+      placeLayer("base-place-state", "state", 11, p.inkSoft, p.halo, false),
+      placeLayer("base-place-city", "city", 12.5, p.ink, p.halo, false),
+      placeLayer("base-place-town", "town", 11.5, p.ink, p.halo, false),
+      placeLayer("base-place-small", "village/locality/neighbourhood", 10.5, p.inkSoft, p.halo, false),
 
       {
         id: "base-road-name",
@@ -118,7 +180,7 @@ export function buildPmtilesStyle(tilesUrl: string): StyleSpecification {
           "text-font": FONT,
           "text-size": 10.5,
         },
-        paint: { "text-color": "#7a756b", "text-halo-color": HALO, "text-halo-width": 1.2 },
+        paint: { "text-color": p.inkSoft, "text-halo-color": p.halo, "text-halo-width": 1.2 },
       },
     ],
   };
@@ -166,6 +228,7 @@ function placeLayer(
   kinds: string,
   size: number,
   color: string,
+  halo: string,
   uppercase: boolean,
 ): LayerSpecification {
   return {
@@ -181,6 +244,6 @@ function placeLayer(
       "text-size": size,
       ...(uppercase ? { "text-transform": "uppercase", "text-letter-spacing": 0.12 } : {}),
     },
-    paint: { "text-color": color, "text-halo-color": HALO, "text-halo-width": 1.3 },
+    paint: { "text-color": color, "text-halo-color": halo, "text-halo-width": 1.3 },
   } as unknown as LayerSpecification;
 }

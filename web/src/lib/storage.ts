@@ -1,9 +1,9 @@
 import type { SavedPin } from "../types";
 
 /**
- * The browser stores each pin's secret link locally so the user can return to
- * it (this is the "On your device" section of the privacy notice). It never
- * leaves the device and cannot be recovered by us.
+ * The browser stores the current pin's secret link locally so the user can
+ * return to it (this is the "On your device" section of the privacy notice).
+ * It never leaves the device and cannot be recovered by us.
  */
 const KEY = "findme.pins.v1";
 
@@ -29,10 +29,10 @@ function write(pins: SavedPin[]): void {
   }
 }
 
+/** Only the current share is kept: creating a new share replaces the stored
+ *  link, so at most one control link lives on the device. */
 export function savePin(pin: SavedPin): void {
-  const pins = listSavedPins().filter((p) => p.slug !== pin.slug);
-  pins.unshift(pin);
-  write(pins);
+  write([pin]);
 }
 
 export function updateSavedPin(slug: string, changes: Partial<SavedPin>): SavedPin | null {

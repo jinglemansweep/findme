@@ -38,6 +38,7 @@ export function publicShell(input: PublicShellInput): string {
       title: "Not found — Find Me",
       bodyClass: "shell-view",
       themeColor: "#12433a",
+      themeColorDark: "#0d1f1b",
       content: `
 <section class="state-card" data-state="notfound">
   <h1>This link doesn't match a share</h1>
@@ -54,6 +55,7 @@ export function publicShell(input: PublicShellInput): string {
       title: "This share has ended — Find Me",
       bodyClass: "shell-view",
       themeColor: "#12433a",
+      themeColorDark: "#0d1f1b",
       boot: { mode: "view", slug: input.slug, ended: true },
       content: `
 <section class="state-card" data-state="ended">
@@ -74,6 +76,7 @@ export function publicShell(input: PublicShellInput): string {
     metaDescription: "A temporary, live location share. Open to see where this person is.",
     bodyClass: "shell-view",
     themeColor: "#12433a",
+      themeColorDark: "#0d1f1b",
     og: {
       title: "Find Me — a shared location",
       description: "Someone is sharing their live location with you. Open the link to see it.",

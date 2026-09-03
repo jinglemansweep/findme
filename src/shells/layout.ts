@@ -4,7 +4,10 @@ export interface ShellOptions {
   title: string;
   metaDescription?: string;
   bodyClass?: string;
+  /** Browser-chrome tint for light colour schemes. */
   themeColor?: string;
+  /** Optional companion tint emitted with a dark-scheme media query. */
+  themeColorDark?: string;
   /** OG card. Generic and coordinate-free on the public page; absent on the
    * control page, which must never unfurl a preview in a chat window (§3). */
   og?: { title: string; description: string; url: string } | null;
@@ -27,6 +30,15 @@ export function renderShell(opts: ShellOptions): string {
       ].join("\n")
     : "";
 
+  const themeColor = opts.themeColor
+    ? opts.themeColorDark
+      ? [
+          `<meta name="theme-color" media="(prefers-color-scheme: light)" content="${escapeHtml(opts.themeColor)}">`,
+          `<meta name="theme-color" media="(prefers-color-scheme: dark)" content="${escapeHtml(opts.themeColorDark)}">`,
+        ].join("\n")
+      : `<meta name="theme-color" content="${escapeHtml(opts.themeColor)}">`
+    : "";
+
   const footerContacts = [
     opts.footer.abuseEmail
       ? `<a href="mailto:${escapeHtml(opts.footer.abuseEmail)}">Report abuse</a>`
@@ -44,7 +56,7 @@ export function renderShell(opts: ShellOptions): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="${escapeHtml(opts.metaDescription ?? "Anonymous, expiring location sharing.")}">
-${opts.themeColor ? `<meta name="theme-color" content="${escapeHtml(opts.themeColor)}">` : ""}
+${themeColor}
 <title>${escapeHtml(opts.title)}</title>
 ${og}
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">

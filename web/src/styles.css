@@ -15,6 +15,19 @@
   --warn: #8a5a00;
   --radius: 14px;
   --shadow: 0 10px 30px rgba(43, 39, 33, 0.14);
+  --input-bg: #ffffff;
+  --chip-bg: rgba(255, 255, 255, 0.92);
+  --chip-ink: var(--brand-ink);
+  --control-chip-bg: #26221d;
+  --control-chip-ink: #f2ece2;
+  --banner-bg: #26221d;
+  --banner-ink: #f2ece2;
+  --banner-ink-soft: #d8d0c2;
+  --banner-line: rgba(242, 236, 226, 0.25);
+  --tip-bg: #2b2721;
+  --tip-ink: #ffffff;
+  --disconnected-bg: #fdeceb;
+  --disconnected-line: #f3c2be;
 }
 
 * {
@@ -65,8 +78,8 @@ body {
   align-items: center;
   padding: 0.28rem 0.8rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--brand-ink);
+  background: var(--chip-bg);
+  color: var(--chip-ink);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-decoration: none;
@@ -88,8 +101,8 @@ body {
 }
 
 .shell-control .brand {
-  background: #26221d;
-  color: #f2ece2;
+  background: var(--control-chip-bg);
+  color: var(--control-chip-ink);
 }
 
 .app-footer {
@@ -371,9 +384,9 @@ main {
 }
 
 .banner.disconnected {
-  background: #fdeceb;
+  background: var(--disconnected-bg);
   color: var(--accent);
-  border: 1px solid #f3c2be;
+  border: 1px solid var(--disconnected-line);
 }
 
 .a11y-summary {
@@ -452,8 +465,8 @@ main {
   width: min(15rem, 70vw);
   padding: 0.5rem 0.7rem;
   border-radius: 8px;
-  background: var(--ink);
-  color: #fff;
+  background: var(--tip-bg);
+  color: var(--tip-ink);
   font-size: 0.8rem;
   line-height: 1.45;
   text-align: left;
@@ -480,7 +493,7 @@ select {
   padding: 0.6rem 0.7rem;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--input-bg);
   font: inherit;
   color: inherit;
 }
@@ -533,10 +546,6 @@ select {
   margin-bottom: 0.4rem;
 }
 
-.created-panel h1 {
-  margin-top: 0;
-}
-
 /* Section label row with an info tooltip pushed to the right edge. */
 .label-row {
   display: flex;
@@ -576,49 +585,6 @@ select {
   margin: 0;
 }
 
-/* Title row with the panel's X close button on the right. */
-.panel-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-
-.panel-header h1 {
-  flex: 1;
-  margin-top: 0;
-}
-
-.panel-close {
-  color: var(--ink-soft);
-  border-color: transparent;
-}
-
-.saved-pins {
-  border-top: 1px solid var(--line);
-  margin-top: 1rem;
-  padding-top: 0.9rem;
-}
-
-.saved-pins ul {
-  list-style: none;
-  padding: 0;
-  margin: 0.4rem 0 0;
-}
-
-.saved-pins li {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
-  align-items: baseline;
-  padding: 0.35rem 0;
-  border-top: 1px solid var(--line);
-}
-
-.saved-link {
-  color: var(--brand-ink);
-  font-weight: 600;
-}
-
 /* ---- control page (distinct dark-accented theme, §3 anti-footgun) ---- */
 
 .shell-control {
@@ -628,21 +594,21 @@ select {
 
 /* The warning is a sticky header of the floating control card: it overlays
    nothing (the map keeps full height) and never scrolls out of view. */
-.control-banner {
+.panel-banner {
   position: sticky;
   top: -0.85rem; /* cancel the card's padding-top so it sticks flush */
   z-index: 1;
   margin: -0.85rem -0.95rem 0.6rem;
   padding: 0.6rem 0.95rem;
   border-radius: 11px 11px 0 0;
-  background: #26221d;
-  color: #f2ece2;
+  background: var(--banner-bg);
+  color: var(--banner-ink);
 }
 
-.control-banner p {
+.panel-banner p {
   margin: 0.15rem 0 0;
   font-size: 0.82rem;
-  color: #d8d0c2;
+  color: var(--banner-ink-soft);
 }
 
 /* Title left, advisory tooltip beside it, top-level Stop sharing control
@@ -655,18 +621,19 @@ select {
 
 .banner-stop {
   flex: none;
+  margin-left: auto; /* park the stop control at the banner's right edge */
 }
 
 /* The ghost tooltip button is dark-on-dark inside the banner — lighten it. */
-.control-banner .info-tip-button {
-  color: #d8d0c2;
+.panel-banner .info-tip-button {
+  color: var(--banner-ink-soft);
 }
 
 /* The stop confirmation attaches directly to the banner's Stop button. */
-.control-banner .confirm-row {
+.panel-banner .confirm-row {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid rgba(242, 236, 226, 0.25);
+  border-top: 1px solid var(--banner-line);
 }
 
 .control-section {
@@ -730,5 +697,46 @@ select {
 @media (min-width: 800px) {
   .map-stack {
     min-height: 55dvh;
+  }
+}
+
+/* ---- dark mode: follows the OS setting ---- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #16130f;
+    --card: #211d17;
+    --ink: #e8e1d3;
+    --ink-soft: #a49b8a;
+    --line: #3a342b;
+    --brand: #1f7a6b;
+    --brand-ink: #8fd0c1;
+    --accent: #e0574d;
+    --ok: #57b87f;
+    --warn: #d9a441;
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --input-bg: #1b1814;
+    --chip-bg: rgba(38, 34, 29, 0.92);
+    --chip-ink: #e8e1d3;
+    --control-chip-bg: rgba(8, 7, 6, 0.92);
+    --control-chip-ink: #f2ece2;
+    --banner-bg: #0e0c0a;
+    /* banner inks are already near-white — unchanged */
+    /* tooltips invert: light popover on the dark card */
+    --tip-bg: #efe9df;
+    --tip-ink: #211d17;
+    --disconnected-bg: #381d1a;
+    --disconnected-line: #6b2f2a;
+  }
+
+  /* The control shell keeps its own §3 identity: a flatter, less warm dark
+     than the standard pages, with the near-black banner as its anchor. */
+  .shell-control {
+    --paper: #121110;
+    --card: #1b1917;
+  }
+
+  .button:hover:not(:disabled) {
+    filter: brightness(1.15);
   }
 }

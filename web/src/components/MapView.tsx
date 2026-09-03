@@ -8,7 +8,7 @@ import {
 } from "maplibre-gl";
 import type { AppConfig } from "../types";
 import { accuracyCircle } from "../lib/geo";
-import { buildPmtilesStyle } from "../mapStyle";
+import { buildPmtilesStyle, mapUiColors, preferredScheme } from "../mapStyle";
 
 /**
  * One imperative MapLibre instance held in a ref and driven from effects —
@@ -74,7 +74,7 @@ export function MapView(props: MapViewProps) {
 
     const style =
       config.basemap.kind === "pmtiles"
-        ? buildPmtilesStyle(config.basemap.tilesUrl)
+        ? buildPmtilesStyle(config.basemap.tilesUrl, preferredScheme())
         : config.basemap.url;
 
     const map = new Map({
@@ -97,17 +97,46 @@ export function MapView(props: MapViewProps) {
     });
     map.on("click", (e) => clickRef.current?.({ lat: e.lngLat.lat, lng: e.lngLat.lng }));
 
-    map.on("load", () => {
-      if (!map.getStyle()) return;
-      updatePadding();
+    // The accuracy circle is a custom source/layer: setStyle (scheme swaps)
+    // drops it, so it is (re-)added idempotently.
+    const addAccuracy = () => {
+      if (!map.getStyle() || map.getSource("accuracy")) return;
       map.addSource("accuracy", { type: "geojson", data: emptyFeatureCollection() });
       map.addLayer({
         id: "accuracy-fill",
         type: "fill",
         source: "accuracy",
-        paint: { "fill-color": "#175e54", "fill-opacity": 0.14 },
+        paint: {
+          "fill-color": mapUiColors(preferredScheme()).accuracyFill,
+          "fill-opacity": 0.14,
+        },
       });
+    };
+
+    map.on("load", () => {
+      if (!map.getStyle()) return;
+      updatePadding();
+      addAccuracy();
     });
+
+    // Follow the OS light/dark setting live: rebuild the basemap style
+    // (same tiles, dark paint palette) and refresh the marker colour.
+    const darkMql = window.matchMedia("(prefers-color-scheme: dark)");
+    const applyScheme = () => {
+      const colors = mapUiColors(preferredScheme());
+      if (config.basemap.kind === "pmtiles") {
+        map.setStyle(buildPmtilesStyle(config.basemap.tilesUrl, preferredScheme()));
+        map.once("idle", addAccuracy);
+      } else if (map.getLayer("accuracy-fill")) {
+        map.setPaintProperty("accuracy-fill", "fill-color", colors.accuracyFill);
+      }
+      if (markerRef.current) {
+        const lngLat = markerRef.current.getLngLat();
+        markerRef.current.remove();
+        markerRef.current = new Marker({ color: colors.marker }).setLngLat(lngLat).addTo(map);
+      }
+    };
+    darkMql.addEventListener("change", applyScheme);
 
     const updatePadding = () => map.setPadding(paddingForOverlay(props.overlayRef?.current ?? null));
     const onResize = () => updatePadding();
@@ -122,6 +151,7 @@ export function MapView(props: MapViewProps) {
 
     return () => {
       window.removeEventListener("resize", onResize);
+      darkMql.removeEventListener("change", applyScheme);
       observer?.disconnect();
       map.remove();
       mapRef.current = null;
@@ -140,7 +170,9 @@ export function MapView(props: MapViewProps) {
     const lngLat: [number, number] = [position.lng, position.lat];
     const apply = () => {
       if (!markerRef.current) {
-        markerRef.current = new Marker({ color: "#b3261e" }).setLngLat(lngLat).addTo(map);
+        markerRef.current = new Marker({ color: mapUiColors(preferredScheme()).marker })
+          .setLngLat(lngLat)
+          .addTo(map);
       } else {
         markerRef.current.setLngLat(lngLat);
       }

@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { InfoTooltip } from "../components/InfoTooltip";
-import { CheckIcon, CloseIcon, CopyIcon, ShareIcon } from "../components/icons";
+import { CheckIcon, CopyIcon, ShareIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { Turnstile } from "../components/Turnstile";
-import { loadCreatedSession, storeCreatedSession } from "../lib/createdSession";
+import { clearCreatedSessionFor, loadCreatedSession, storeCreatedSession } from "../lib/createdSession";
 import { copyText } from "../lib/clipboard";
-import { countdown, formatCoords, formatExpiry } from "../lib/format";
+import { countdown, formatExpiry } from "../lib/format";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
-import { listSavedPins, savePin } from "../lib/storage";
+import { removeSavedPin, savePin } from "../lib/storage";
 import { canNativeShare, shareUrl } from "../lib/share";
-import type { AppConfig, CreatedPin, SavedPin } from "../types";
+import type { AppConfig, CreatedPin } from "../types";
 
 const TTL_OPTIONS = [
   { value: 900, label: "15 minutes" },
@@ -33,7 +33,6 @@ export function CreatePage({ config }: { config: AppConfig }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedPin | null>(null);
-  const [saved, setSaved] = useState<SavedPin[]>([]);
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Non-production marker (staging's "beta"): this page's shell is a static
@@ -74,8 +73,6 @@ export function CreatePage({ config }: { config: AppConfig }) {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => setSaved(listSavedPins()), [created]);
 
   // Offer the visitor's location as soon as the form opens rather than
   // waiting for the button: an undecided permission raises the browser
@@ -269,8 +266,6 @@ export function CreatePage({ config }: { config: AppConfig }) {
             )}
           </>
         )}
-
-        <SavedPinsList saved={saved} />
       </div>
     </section>
   );
@@ -280,6 +275,9 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
   const [copied, setCopied] = useState<"public" | "private" | null>(null);
   const [shared, setShared] = useState(false);
   const [remaining, setRemaining] = useState(created.expiresAt - Date.now());
+  const [confirmStop, setConfirmStop] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [stopError, setStopError] = useState<string | null>(null);
 
   useEffect(() => {
     const t = window.setInterval(() => setRemaining(created.expiresAt - Date.now()), 1_000);
@@ -303,14 +301,56 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
     }
   }
 
+  // Same mechanism as the control page: stopping is definitive — the location
+  // is deleted server-side and viewers see that the share has ended.
+  async function stop() {
+    setBusy("stop");
+    setStopError(null);
+    try {
+      await api.stopPin(created.slug, created.secret);
+      removeSavedPin(created.slug);
+      clearCreatedSessionFor(created.slug);
+      onReset();
+    } catch (err) {
+      setStopError(err instanceof ApiError ? err.message : "Couldn't stop the share.");
+      setBusy(null);
+      setConfirmStop(false);
+    }
+  }
+
   return (
     <div className="created-panel">
-      <div className="panel-header">
-        <h1>Your share is live</h1>
-        <button className="button ghost icon-button panel-close" type="button" onClick={onReset} aria-label="Close">
-          <CloseIcon />
-        </button>
+      <div className="panel-banner" role="note">
+        <div className="banner-row">
+          <strong>Share Live</strong>
+          <button
+            className="button danger small banner-stop"
+            type="button"
+            onClick={() => setConfirmStop(true)}
+            disabled={busy === "stop"}
+          >
+            {busy === "stop" ? "Stopping…" : "Stop sharing"}
+          </button>
+        </div>
+        {confirmStop && (
+          <div className="confirm-row">
+            <p>Stop sharing now? Your location is deleted and viewers see that the share has ended.</p>
+            <div className="button-row">
+              <button className="button danger" type="button" onClick={stop} disabled={busy === "stop"}>
+                {busy === "stop" ? "Stopping…" : "Yes, stop sharing"}
+              </button>
+              <button className="button ghost" type="button" onClick={() => setConfirmStop(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+      {stopError && (
+        <p className="error-text" role="alert">
+          {stopError}
+        </p>
+      )}
 
       <div className="copy-block">
         <div className="label-row">
@@ -381,37 +421,6 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
           Edit
         </a>
       </div>
-    </div>
-  );
-}
-
-function SavedPinsList({ saved }: { saved: SavedPin[] }) {
-  const now = Date.now();
-  // Newest first, capped at the 3 most recent shares; older ones stay stored
-  // on the device but are not listed here.
-  const active = useMemo(
-    () =>
-      saved
-        .filter((p) => p.expiresAt > now)
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, 3),
-    [saved, now],
-  );
-  if (active.length === 0) return null;
-  return (
-    <div className="saved-pins">
-      <h2>Sharing from this device</h2>
-      <ul>
-        {active.map((pin) => (
-          <li key={pin.slug}>
-            <a className="saved-link" href={`/u/${pin.slug}#s_${pin.secret}`}>
-              {pin.label ||
-                (pin.lat != null && pin.lng != null ? formatCoords(pin.lat, pin.lng, null) : "Untitled pin")}
-            </a>
-            <span className="field-note">expires in {countdown(pin.expiresAt - now)}</span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }

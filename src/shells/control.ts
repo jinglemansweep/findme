@@ -21,6 +21,7 @@ export function controlShell(input: ControlShellInput): string {
     title: "Your control page — Find Me",
     bodyClass: "shell-control",
     themeColor: "#26221d",
+    themeColorDark: "#0e0c0a",
     boot: { mode: "control", slug: input.slug, ended: input.ended },
     content: `
 <section class="control-page">
