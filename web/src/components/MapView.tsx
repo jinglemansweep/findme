@@ -34,7 +34,7 @@ export interface MapViewProps {
 }
 
 const DEFAULT_CENTER: [number, number] = [-2.6, 54.4]; // UK-ish
-const DEFAULT_ZOOM = 5;
+const DEFAULT_ZOOM = 16; // street level
 
 /**
  * Persistent camera padding derived from the floating panel's actual rect:
