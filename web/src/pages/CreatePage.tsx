@@ -9,6 +9,7 @@ import { copyText } from "../lib/clipboard";
 import { countdown, formatCoords, formatExpiry } from "../lib/format";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
 import { listSavedPins, savePin } from "../lib/storage";
+import { canNativeShare, shareUrl } from "../lib/share";
 import type { AppConfig, CreatedPin, SavedPin } from "../types";
 
 const TTL_OPTIONS = [
@@ -279,9 +280,6 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
   const [copied, setCopied] = useState<"public" | "private" | null>(null);
   const [shared, setShared] = useState(false);
   const [remaining, setRemaining] = useState(created.expiresAt - Date.now());
-  // Only render the native share affordance where the Web Share API exists;
-  // elsewhere the copy button is the path.
-  const canShare = typeof navigator.share === "function";
 
   useEffect(() => {
     const t = window.setInterval(() => setRemaining(created.expiresAt - Date.now()), 1_000);
@@ -294,15 +292,13 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
     if (ok) window.setTimeout(() => setCopied(null), 2_000);
   }
 
-  // Opens the OS share sheet (WhatsApp, email, SMS, …) for the PUBLIC link —
-  // never the control link. Cancelled sheets are not an error.
+  // Opens the OS share sheet for the PUBLIC link — never the control link.
   async function share() {
-    try {
-      await navigator.share({ title: "Find Me", url: created.publicUrl });
+    const outcome = await shareUrl(created.publicUrl);
+    if (outcome === "shared") {
       setShared(true);
       window.setTimeout(() => setShared(false), 2_000);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
+    } else if (outcome === "failed") {
       await copy("public");
     }
   }
@@ -322,7 +318,7 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
         </div>
         <div className="copy-row">
           <input type="text" readOnly value={created.publicUrl} onFocus={(e) => e.target.select()} />
-          {canShare && (
+          {canNativeShare && (
             <button
               className={`button icon-button${shared ? " copied" : ""}`}
               type="button"

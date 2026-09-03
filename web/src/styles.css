@@ -635,18 +635,6 @@ select {
   margin: 0.3rem 0 0.6rem;
 }
 
-.danger-zone .button.danger {
-  width: 100%;
-}
-
-.primary-copy {
-  background: #eef4f0;
-  border: 1px solid #d5e2da;
-  border-radius: 12px;
-  padding: 0.8rem;
-  margin-top: 0.4rem;
-}
-
 /* ---- privacy page ---- */
 
 .shell-privacy main {

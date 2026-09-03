@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { InfoTooltip } from "../components/InfoTooltip";
-import { CheckIcon, CopyIcon } from "../components/icons";
+import { CheckIcon, CopyIcon, ShareIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
 import { clearCreatedSessionFor } from "../lib/createdSession";
@@ -9,6 +9,7 @@ import { copyText } from "../lib/clipboard";
 import { countdown, formatExpiry, relativeAge } from "../lib/format";
 import { distanceMetres } from "../lib/geo";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
+import { canNativeShare, shareUrl } from "../lib/share";
 import { getSavedPin, removeSavedPin, savePin, updateSavedPin } from "../lib/storage";
 import type { AppConfig, PinMeta } from "../types";
 
@@ -158,6 +159,7 @@ function ControlPanel(props: ControlPanelProps) {
   const { config, slug, secretRef, meta, onMetaChanged, publicUrl, position } = props;
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const [updating, setUpdating] = useState(false);
@@ -371,6 +373,17 @@ function ControlPanel(props: ControlPanelProps) {
     if (ok) window.setTimeout(() => setCopied(false), 2_000);
   }
 
+  // Opens the OS share sheet for the PUBLIC link — never the control link.
+  async function sharePublicLink() {
+    const outcome = await shareUrl(publicUrl);
+    if (outcome === "shared") {
+      setShared(true);
+      window.setTimeout(() => setShared(false), 2_000);
+    } else if (outcome === "failed") {
+      await copyShareLink();
+    }
+  }
+
   return (
     <section className="control-page">
       <div className="map-stack">
@@ -392,7 +405,7 @@ function ControlPanel(props: ControlPanelProps) {
           <strong>This is your private control page.</strong>
           <p>Anyone holding this link can move or stop your share — never paste it into a chat.</p>
         </div>
-        <div className="copy-block primary-copy">
+        <div className="copy-block">
           <div className="label-row">
             <h2>Let people follow you</h2>
             <InfoTooltip
@@ -402,6 +415,17 @@ function ControlPanel(props: ControlPanelProps) {
           </div>
           <div className="copy-row">
             <input type="text" readOnly value={publicUrl} onFocus={(e) => e.target.select()} />
+            {canNativeShare && (
+              <button
+                className={`button icon-button${shared ? " copied" : ""}`}
+                type="button"
+                onClick={sharePublicLink}
+                aria-label="Share link via your apps"
+                title="Share via your apps"
+              >
+                {shared ? <CheckIcon /> : <ShareIcon />}
+              </button>
+            )}
             <button
               className={`button icon-button${copied ? " copied" : ""}`}
               type="button"
@@ -523,7 +547,7 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section danger-zone">
-          <h2>Link safety</h2>
+          <h2>Danger zone</h2>
           {rotated ? (
             <div className="copy-block">
               <p className="field-note">New control link (saved on this device, old one no longer works):</p>
@@ -543,16 +567,7 @@ function ControlPanel(props: ControlPanelProps) {
                 </button>
               </div>
             </div>
-          ) : (
-            <button className="button secondary" type="button" onClick={() => setConfirmRotate(true)}>
-              Replace control link
-            </button>
-          )}
-        </div>
-
-        <div className="control-section danger-zone">
-          <h2>Stop sharing</h2>
-          {confirmStop ? (
+          ) : confirmStop ? (
             <div className="confirm-row">
               <p>Stop sharing now? Your location is deleted and viewers see that the share has ended.</p>
               <div className="button-row">
@@ -565,9 +580,14 @@ function ControlPanel(props: ControlPanelProps) {
               </div>
             </div>
           ) : (
-            <button className="button danger" type="button" onClick={() => setConfirmStop(true)}>
-              Stop sharing
-            </button>
+            <div className="button-row wrap">
+              <button className="button secondary" type="button" onClick={() => setConfirmRotate(true)}>
+                Replace control link
+              </button>
+              <button className="button danger" type="button" onClick={() => setConfirmStop(true)}>
+                Stop sharing
+              </button>
+            </div>
           )}
         </div>
 
