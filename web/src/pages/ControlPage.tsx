@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
+import { InfoTooltip } from "../components/InfoTooltip";
 import { CheckIcon, CopyIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
@@ -389,14 +390,16 @@ function ControlPanel(props: ControlPanelProps) {
             the controls below are scrolled (§3 anti-footgun). */}
         <div className="control-banner" role="note">
           <strong>This is your private control page.</strong>
-          <p>
-            Anyone holding this link can move or stop your share — never paste
-            it into a chat. To let people follow you, use the copy button
-            beside the share link below.
-          </p>
+          <p>Anyone holding this link can move or stop your share — never paste it into a chat.</p>
         </div>
         <div className="copy-block primary-copy">
-          <h2>Let people follow you</h2>
+          <div className="label-row">
+            <h2>Let people follow you</h2>
+            <InfoTooltip
+              label="About the share link"
+              text="This is the safe link to paste into chats — it only shows your location. The private control link warned about above must never be shared."
+            />
+          </div>
           <div className="copy-row">
             <input type="text" readOnly value={publicUrl} onFocus={(e) => e.target.select()} />
             <button
@@ -409,7 +412,6 @@ function ControlPanel(props: ControlPanelProps) {
               {copied ? <CheckIcon /> : <CopyIcon />}
             </button>
           </div>
-          <p className="field-note">This is the safe link to paste into chats. It only shows your location.</p>
         </div>
 
         <div className="control-section">
@@ -441,7 +443,7 @@ function ControlPanel(props: ControlPanelProps) {
               </>
             ) : (
               <button className="button secondary" type="button" onClick={() => setMoveMode(true)}>
-                Move pin manually
+                Move pin
               </button>
             )}
           </div>
@@ -497,7 +499,13 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section">
-          <h2>Expiry</h2>
+          <div className="label-row">
+            <h2>Expiry</h2>
+            <InfoTooltip
+              label="About expiry"
+              text="Extend adds time from now. A share can last at most 7 days from the current moment."
+            />
+          </div>
           <p className="field-note">
             Expires in {countdown(remaining)} — {formatExpiry(meta.expiresAt)}
           </p>
@@ -512,7 +520,6 @@ function ControlPanel(props: ControlPanelProps) {
               +24 hours
             </button>
           </div>
-          <p className="field-note">Maximum 7 days from now.</p>
         </div>
 
         <div className="control-section danger-zone">

@@ -40,3 +40,29 @@ export function CloseIcon() {
     </svg>
   );
 }
+
+export function InfoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="8" cy="5" r="1" fill="currentColor" />
+      <path d="M8 7.4v3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ShareIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="12" cy="3.5" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="4" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12.5" r="2" stroke="currentColor" strokeWidth="1.5" />
+      <path
+        d="M5.8 7.1l4.4-2.5M5.8 8.9l4.4 2.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}

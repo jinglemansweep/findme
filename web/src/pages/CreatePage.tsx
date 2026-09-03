@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "../api";
-import { CheckIcon, CloseIcon, CopyIcon } from "../components/icons";
+import { InfoTooltip } from "../components/InfoTooltip";
+import { CheckIcon, CloseIcon, CopyIcon, ShareIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { Turnstile } from "../components/Turnstile";
 import { loadCreatedSession, storeCreatedSession } from "../lib/createdSession";
@@ -185,9 +186,15 @@ export function CreatePage({ config }: { config: AppConfig }) {
         ) : (
           <>
             <div className="form-field">
-              <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating}>
-                {locating ? "Finding you…" : "Use my location"}
-              </button>
+              <div className="button-row wrap">
+                <button className="button primary" type="button" onClick={create} disabled={!canCreate}>
+                  {creating ? "Sharing…" : "Share"}
+                </button>
+                <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating}>
+                  {locating ? "Finding you…" : "Use my location"}
+                </button>
+                <InfoTooltip text="Anyone with the share link can see this location until it expires. Nothing is stored after that." />
+              </div>
               <p className="field-note">or tap the map to place your pin</p>
               {geoError && (
                 <p className="error-text" role="alert">
@@ -196,27 +203,28 @@ export function CreatePage({ config }: { config: AppConfig }) {
               )}
             </div>
 
-            <div className="form-field">
-              <label htmlFor="label">Message (optional)</label>
-              <input
-                id="label"
-                type="text"
-                maxLength={140}
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                placeholder="e.g. Meet me at the car"
-              />
-            </div>
-
-            <div className="form-field">
-              <label htmlFor="ttl">Share expires after</label>
-              <select id="ttl" value={ttl} onChange={(e) => setTtl(Number(e.target.value))}>
-                {TTL_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+            <div className="field-row">
+              <div className="form-field">
+                <label htmlFor="label">Message (optional)</label>
+                <input
+                  id="label"
+                  type="text"
+                  maxLength={140}
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="e.g. Meet me at the car"
+                />
+              </div>
+              <div className="form-field expiry">
+                <label htmlFor="ttl">Expires after</label>
+                <select id="ttl" value={ttl} onChange={(e) => setTtl(Number(e.target.value))}>
+                  {TTL_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="form-field">
@@ -258,14 +266,6 @@ export function CreatePage({ config }: { config: AppConfig }) {
                 {error}
               </p>
             )}
-
-            <button className="button primary big" type="button" onClick={create} disabled={!canCreate}>
-              {creating ? "Sharing…" : "Share"}
-            </button>
-            <p className="field-note">
-              Anyone with the share link can see this location until it expires.
-              Nothing is stored after that.
-            </p>
           </>
         )}
 
@@ -277,7 +277,11 @@ export function CreatePage({ config }: { config: AppConfig }) {
 
 function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () => void }) {
   const [copied, setCopied] = useState<"public" | "private" | null>(null);
+  const [shared, setShared] = useState(false);
   const [remaining, setRemaining] = useState(created.expiresAt - Date.now());
+  // Only render the native share affordance where the Web Share API exists;
+  // elsewhere the copy button is the path.
+  const canShare = typeof navigator.share === "function";
 
   useEffect(() => {
     const t = window.setInterval(() => setRemaining(created.expiresAt - Date.now()), 1_000);
@@ -290,6 +294,19 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
     if (ok) window.setTimeout(() => setCopied(null), 2_000);
   }
 
+  // Opens the OS share sheet (WhatsApp, email, SMS, …) for the PUBLIC link —
+  // never the control link. Cancelled sheets are not an error.
+  async function share() {
+    try {
+      await navigator.share({ title: "Find Me", url: created.publicUrl });
+      setShared(true);
+      window.setTimeout(() => setShared(false), 2_000);
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      await copy("public");
+    }
+  }
+
   return (
     <div className="created-panel">
       <div className="panel-header">
@@ -298,14 +315,24 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
           <CloseIcon />
         </button>
       </div>
-      <p className="field-note">
-        Expires in {countdown(remaining)} ({formatExpiry(created.expiresAt)}).
-      </p>
 
       <div className="copy-block">
-        <h2>Send this to people</h2>
+        <div className="label-row">
+          <h2>Send this to people</h2>
+        </div>
         <div className="copy-row">
           <input type="text" readOnly value={created.publicUrl} onFocus={(e) => e.target.select()} />
+          {canShare && (
+            <button
+              className={`button icon-button${shared ? " copied" : ""}`}
+              type="button"
+              onClick={share}
+              aria-label="Share link via your apps"
+              title="Share via your apps"
+            >
+              {shared ? <CheckIcon /> : <ShareIcon />}
+            </button>
+          )}
           <button
             className={`button icon-button${copied === "public" ? " copied" : ""}`}
             type="button"
@@ -319,7 +346,13 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
       </div>
 
       <div className="copy-block private">
-        <h2>Your control link (already saved on this device)</h2>
+        <div className="label-row">
+          <h2>Your control link</h2>
+          <InfoTooltip
+            label="About the control link"
+            text="Already saved on this device. Never paste it into a chat — anyone holding it can move or stop your share."
+          />
+        </div>
         <div className="copy-row">
           <input type="text" readOnly value={created.privateUrl} onFocus={(e) => e.target.select()} />
           <button
@@ -332,10 +365,6 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
             {copied === "private" ? <CheckIcon /> : <CopyIcon />}
           </button>
         </div>
-        <p className="field-note warning">
-          Don't paste this one into a chat — anyone holding it can move or stop
-          your share.
-        </p>
       </div>
 
       {created.email && (
@@ -348,8 +377,11 @@ function CreatedPanel({ created, onReset }: { created: CreatedPin; onReset: () =
         </p>
       )}
 
-      <div className="button-row">
-        <a className="button primary big" href={created.privateUrl}>
+      <div className="live-row">
+        <p className="field-note">
+          Expires in {countdown(remaining)} ({formatExpiry(created.expiresAt)})
+        </p>
+        <a className="button primary" href={created.privateUrl}>
           Edit
         </a>
       </div>

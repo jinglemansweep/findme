@@ -47,25 +47,36 @@ body {
 
 /* ---- chrome ---- */
 
+/* No header bar: the brand is a small floating chip over the page, so the
+   map fills the screen from the very top. Absolute (not fixed) so it scrolls
+   away with the document on the prose page. */
 .app-header {
+  position: absolute;
+  top: calc(0.55rem + env(safe-area-inset-top));
+  left: 0.7rem;
+  z-index: 30;
   display: flex;
   align-items: center;
-  padding: 0.6rem 1rem;
-  background: var(--brand);
+  gap: 0.5rem;
 }
 
 .brand {
-  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--brand-ink);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-decoration: none;
-  font-size: 1.05rem;
+  font-size: 1rem;
+  box-shadow: var(--shadow);
 }
 
 /* Non-production environment marker (injected server-side when ENV_LABEL is
    set, e.g. staging's "beta"). */
 .env-badge {
-  margin-left: 0.5rem;
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
   background: var(--warn);
@@ -76,8 +87,9 @@ body {
   text-transform: uppercase;
 }
 
-.shell-control .app-header {
+.shell-control .brand {
   background: #26221d;
+  color: #f2ece2;
 }
 
 .app-footer {
@@ -208,7 +220,8 @@ main {
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 1.1rem 1.2rem;
-  margin: 1rem auto;
+  /* Generous top margin keeps the card clear of the floating brand chip. */
+  margin: 3.4rem auto 1rem;
   max-width: 640px;
   width: calc(100% - 1.6rem);
 }
@@ -272,12 +285,12 @@ main {
   background: var(--paper);
 }
 
-/* Floating map controls live at the TOP of the map: the bottom is covered by
-   the info sheet, so bottom-anchored buttons would hide behind it. */
+/* Floating map controls sit at the top-RIGHT of the map: the bottom is
+   covered by the info sheet, and the floating brand chip owns the top-left. */
 .map-button {
   position: absolute;
   top: calc(0.7rem + env(safe-area-inset-top));
-  left: 0.7rem;
+  right: 0.7rem;
   box-shadow: var(--shadow);
 }
 
@@ -389,7 +402,8 @@ main {
 }
 
 .create-hero {
-  padding: 2rem 1rem;
+  /* Clears the floating brand chip before React replaces this loading state. */
+  padding: 3.4rem 1rem 2rem;
   text-align: center;
 }
 
@@ -401,6 +415,55 @@ main {
   display: block;
   font-weight: 600;
   margin-bottom: 0.3rem;
+}
+
+/* Message + expiry share one row to keep the overlay compact: the message
+   takes the remaining width, the select keeps a comfortable fixed width. */
+.field-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+}
+
+.field-row .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row .form-field.expiry {
+  flex: 0 0 8.5rem;
+}
+
+/* The sharing advisory is a hover/click tooltip beside the top-row buttons
+   rather than permanent text. */
+.info-tip {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+}
+
+.info-tip-pop {
+  display: none;
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: -0.25rem;
+  z-index: 5;
+  width: min(15rem, 70vw);
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+
+.info-tip:hover .info-tip-pop,
+.info-tip-button:focus-visible + .info-tip-pop,
+.info-tip.open .info-tip-pop {
+  display: block;
 }
 
 input[type="text"],
@@ -467,6 +530,32 @@ select {
   margin-top: 0;
 }
 
+/* Section label row with an info tooltip pushed to the right edge. */
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.label-row h2 {
+  margin: 0;
+}
+
+/* Countdown and Edit share the bottom row of the live panel. */
+.live-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-top: 0.7rem;
+}
+
+.live-row .field-note {
+  flex: 1;
+  margin: 0;
+}
+
 /* Title row with the panel's X close button on the right. */
 .panel-header {
   display: flex;
@@ -523,23 +612,23 @@ select {
   position: sticky;
   top: -0.85rem; /* cancel the card's padding-top so it sticks flush */
   z-index: 1;
-  margin: -0.85rem -0.95rem 0.7rem;
-  padding: 0.75rem 0.95rem;
+  margin: -0.85rem -0.95rem 0.6rem;
+  padding: 0.6rem 0.95rem;
   border-radius: 11px 11px 0 0;
   background: #26221d;
   color: #f2ece2;
 }
 
 .control-banner p {
-  margin: 0.25rem 0 0;
+  margin: 0.15rem 0 0;
   font-size: 0.82rem;
   color: #d8d0c2;
 }
 
 .control-section {
   border-top: 1px solid var(--line);
-  margin-top: 0.7rem;
-  padding-top: 0.65rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
 }
 
 .confirm-row p {
@@ -568,7 +657,8 @@ select {
 .prose {
   max-width: 680px;
   margin: 1.2rem auto 2rem;
-  padding: 0 1.2rem;
+  /* Top padding clears the floating brand chip above the Back button. */
+  padding: 3.2rem 1.2rem 0;
 }
 
 .prose .privacy-back {
