@@ -71,6 +71,8 @@ test("create, view, then stop a share", async ({ browser }) => {
 
   // Stopping deletes the position; the visitor's next poll (≤5s) shows ended.
   await creatorPage.getByRole("button", { name: "Stop sharing" }).click();
+  // While the confirmation row is open, the banner button stands down.
+  await expect(creatorPage.getByRole("button", { name: "Stop sharing", exact: true })).toBeDisabled();
   await creatorPage.getByRole("button", { name: "Yes, stop sharing" }).click();
   await creatorPage.waitForURL((url) => url.pathname === "/");
   // Back on the create page — same document, no reload flash.
@@ -181,4 +183,25 @@ test("a viewer survives losing the connection and resumes when it returns", asyn
   await ctx.setOffline(false);
   await expect(page.getByRole("alert")).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator(".freshness")).toContainText("Updated");
+});
+
+test("the environment badge does not accumulate across in-page transitions", async ({ request, browser }) => {
+  // The e2e dev server sets ENV_LABEL=beta (scripts/make-ci-wrangler.mjs),
+  // matching how staging is labelled.
+  const pin = await seedPin(request, "198.51.100.24");
+  const page = await (await browser.newContext()).newPage();
+  await page.goto(pin.privateUrl);
+  await expect(page.getByText("Share Control")).toBeVisible();
+  expect(await page.title()).toBe("Your control page — Find Me (beta)");
+  await expect(page.locator(".app-header .env-badge")).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Stop sharing" }).click();
+  await expect(page.getByRole("button", { name: "Stop sharing", exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: "Yes, stop sharing" }).click();
+  await page.waitForURL((url) => url.pathname === "/");
+
+  // The create page remounted in the same document: still exactly one badge
+  // and a single label in the title.
+  await expect(page.locator(".app-header .env-badge")).toHaveCount(1);
+  expect(await page.title()).toBe("Find Me — share your location temporarily (beta)");
 });

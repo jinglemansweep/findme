@@ -56,11 +56,12 @@ export function ControlPage({ config, slug, endedBoot, handedSecret, onExitToCre
   const publicUrl = `${location.origin}/${slug}`;
 
   // Arriving via an in-page transition means no server shell was rendered
-  // for this page: apply the control shell's title and dark body class.
+  // for this page: apply the control shell's title (with the non-production
+  // label the server would have stamped) and dark body class.
   useEffect(() => {
     document.body.className = "shell-control";
-    document.title = "Your control page — Find Me";
-  }, []);
+    document.title = `Your control page — Find Me${config.envLabel ? ` (${config.envLabel})` : ""}`;
+  }, [config.envLabel]);
 
   // Read the secret from the fragment once, then strip it from the URL
   // (history.replaceState — the fragment never reaches the server anyway).
@@ -578,7 +579,7 @@ function ControlPanel(props: ControlPanelProps) {
               className="button danger small banner-stop"
               type="button"
               onClick={() => setConfirmStop(true)}
-              disabled={busy === "stop"}
+              disabled={busy === "stop" || confirmStop}
             >
               {busy === "stop" ? "Stopping…" : "Stop sharing"}
             </button>

@@ -32,23 +32,17 @@ export function CreatePage({ config, onCreated }: { config: AppConfig; onCreated
 
   // Arriving via an in-page transition (after stopping a share) means no
   // server shell was rendered for this page: apply the shell's title and
-  // body class ourselves. A no-op when the static page already set them —
-  // this effect runs before the env-label effect below, which appends to
-  // the title either way.
+  // body class ourselves. The env label is folded into the title, and the
+  // badge insertion is guarded — this effect runs again on every in-page
+  // return to the create page, and an unguarded insert would stack badges.
   useEffect(() => {
     document.body.className = "shell-create";
-    document.title = "Find Me — share your location temporarily";
-  }, []);
-
-  // Non-production marker (staging's "beta"): this page's shell is a static
-  // asset the Worker never renders, so the label is applied client-side
-  // from the config (worker-rendered pages are labelled server-side).
-  useEffect(() => {
-    if (!config.envLabel) return;
-    document.title = `${document.title} (${config.envLabel})`;
-    document
-      .querySelector(".app-header .brand")
-      ?.insertAdjacentHTML("afterend", `<span class="env-badge">${config.envLabel}</span>`);
+    document.title = `Find Me — share your location temporarily${config.envLabel ? ` (${config.envLabel})` : ""}`;
+    if (config.envLabel && !document.querySelector(".app-header .env-badge")) {
+      document
+        .querySelector(".app-header .brand")
+        ?.insertAdjacentHTML("afterend", `<span class="env-badge">${config.envLabel}</span>`);
+    }
   }, [config.envLabel]);
 
   // A stored session means this tab already has a live share: funnel
