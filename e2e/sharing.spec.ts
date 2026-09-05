@@ -58,6 +58,8 @@ test("create, view, then stop a share", async ({ browser }) => {
   // The control page boots from /u/:slug#s_…, then strips the fragment.
   await creatorPage.waitForURL(/\/u\/[0-9A-HJKMNP-TV-Z]{12}$/);
   await expect(creatorPage.getByText("Share Control")).toBeVisible();
+  // The pin is a DOM marker and shows before the basemap finishes loading.
+  await expect(creatorPage.locator(".maplibregl-marker")).toBeVisible({ timeout: 10_000 });
 
   const publicUrl = await creatorPage.getByLabel("Your share link").inputValue();
   expect(publicUrl).toMatch(/^http:\/\/127\.0\.0\.1:8787\/[0-9A-HJKMNP-TV-Z]{12}$/);

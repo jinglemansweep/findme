@@ -152,11 +152,6 @@ main {
   filter: brightness(0.97);
 }
 
-.button:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
 .button.primary {
   background: var(--brand);
   border-color: var(--brand);
@@ -193,6 +188,16 @@ main {
   background: var(--ok);
   border-color: var(--ok);
   color: var(--card);
+}
+
+/* Disabled — deliberately after every variant colour above: the rule needs
+   to beat them (equal specificity, later source order), so a disabled
+   button reads as inert whatever its colour: neutral grey fill, muted ink. */
+.button:disabled {
+  background: var(--line);
+  border-color: var(--line);
+  color: var(--ink-soft);
+  cursor: default;
 }
 
 .button.big {
