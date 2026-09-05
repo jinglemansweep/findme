@@ -551,7 +551,7 @@ function ControlPanel(props: ControlPanelProps) {
                 <button className="button danger small" type="button" onClick={stop} disabled={busy === "stop"}>
                   {busy === "stop" ? "Stopping…" : "Yes, stop sharing"}
                 </button>
-                <button className="button ghost" type="button" onClick={() => setConfirmStop(false)}>
+                <button className="button ghost small" type="button" onClick={() => setConfirmStop(false)}>
                   Cancel
                 </button>
               </div>
@@ -620,7 +620,7 @@ function ControlPanel(props: ControlPanelProps) {
             {moveMode ? (
               <>
                 <button
-                  className="button ok"
+                  className="button ok small"
                   type="button"
                   onClick={moveToTarget}
                   disabled={!moveTarget || busy === "move"}
@@ -628,7 +628,7 @@ function ControlPanel(props: ControlPanelProps) {
                   {busy === "move" ? "Moving…" : "Confirm?"}
                 </button>
                 <button
-                  className="button ghost"
+                  className="button ghost small"
                   type="button"
                   onClick={() => {
                     setMoveMode(false);
