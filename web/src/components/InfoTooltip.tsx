@@ -5,16 +5,20 @@ import { InfoIcon } from "./icons";
  * Hover/focus/click tooltip for short advisory text. Click support keeps it
  * reachable on touch screens, where there is no hover. `align` picks which
  * way the popover opens from the icon: "right" anchors it at the icon's
- * right edge, "left" lets it grow rightward from the icon's left.
+ * right edge, "left" lets it grow rightward from the icon's left. `above`
+ * flips it above the icon for rows near the bottom of a scrollable card,
+ * where opening downward would grow the scroll area.
  */
 export function InfoTooltip({
   text,
   label = "More information",
   align = "right",
+  above = false,
 }: {
   text: string;
   label?: string;
   align?: "right" | "left";
+  above?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -38,7 +42,10 @@ export function InfoTooltip({
   }, [open]);
 
   return (
-    <span ref={ref} className={`info-tip${align === "left" ? " pop-left" : ""}${open ? " open" : ""}`}>
+    <span
+      ref={ref}
+      className={`info-tip${align === "left" ? " pop-left" : ""}${above ? " pop-above" : ""}${open ? " open" : ""}`}
+    >
       <button
         type="button"
         className="button ghost icon-button info-tip-button"

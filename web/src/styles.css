@@ -12,6 +12,7 @@
   --brand-ink: #0e3d37;
   --accent: #b3261e;
   --ok: #1b7a43;
+  --hl: #2563eb;
   --warn: #8a5a00;
   --radius: 14px;
   --shadow: 0 10px 30px rgba(43, 39, 33, 0.14);
@@ -162,6 +163,14 @@ main {
   color: #fff;
 }
 
+/* Blue highlight for the control page's primary actions — reads as a
+   pressable button on both themes, unlike the quiet secondary fill. */
+.button.highlight {
+  background: var(--hl);
+  border-color: var(--hl);
+  color: #fff;
+}
+
 .button.secondary {
   background: var(--card);
 }
@@ -176,6 +185,14 @@ main {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+/* Success confirm (e.g. the move-pin Confirm step): --ok adapts per theme,
+   and --card keeps the label readable on it in light and dark. */
+.button.ok {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--card);
 }
 
 .button.big {
@@ -508,6 +525,13 @@ main {
   left: -0.25rem;
 }
 
+/* Above variant: icons near the bottom of a scrollable card would grow the
+   scroll area (or clip) when opening downward. */
+.info-tip.pop-above .info-tip-pop {
+  top: auto;
+  bottom: calc(100% + 0.45rem);
+}
+
 input[type="text"],
 input[type="email"],
 select {
@@ -660,12 +684,6 @@ select {
   margin-left: auto; /* park the stop control at the banner's right edge */
 }
 
-/* The advisory tooltip tucks in right of the Stop control, at the edge —
-   drop its own auto margin or it would split the row's free space. */
-.banner-row .info-tip {
-  margin-left: 0;
-}
-
 /* The ghost tooltip button is dark-on-dark inside the banner — lighten it. */
 .panel-banner .info-tip-button {
   color: var(--banner-ink-soft);
@@ -682,6 +700,11 @@ select {
   border-top: 1px solid var(--line);
   margin-top: 0.55rem;
   padding-top: 0.5rem;
+}
+
+/* Breathing room between the location action buttons and the toggles. */
+.control-card .control-section .button-row {
+  margin-bottom: 0.35rem;
 }
 
 .confirm-row p {
@@ -755,6 +778,7 @@ select {
     --brand-ink: #8fd0c1;
     --accent: #e0574d;
     --ok: #57b87f;
+    --hl: #3b82f6;
     --warn: #d9a441;
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
     --input-bg: #1b1814;

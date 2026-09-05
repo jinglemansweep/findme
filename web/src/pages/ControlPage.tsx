@@ -4,7 +4,7 @@ import { InfoTooltip } from "../components/InfoTooltip";
 import { CheckIcon, CopyIcon, RotateIcon, ShareIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
-import { clearCreatedSessionFor, loadEmailNotice } from "../lib/createdSession";
+import { clearCreatedSessionFor, loadCreatedSession, loadEmailNotice } from "../lib/createdSession";
 import { copyText } from "../lib/clipboard";
 import { countdown, formatExpiry, relativeAge } from "../lib/format";
 import { distanceMetres } from "../lib/geo";
@@ -46,15 +46,29 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
 
   // Read the secret from the fragment once, then strip it from the URL
   // (history.replaceState — the fragment never reaches the server anyway).
+  // A reload loses the fragment, so recover the secret from this device:
+  // first the tab's stored session, then the saved current share. Only when
+  // neither has it is the link truly unrecoverable.
   useEffect(() => {
-    const hash = location.hash;
-    const match = /^#s_(.+)$/.exec(hash);
+    const match = /^#s_(.+)$/.exec(location.hash);
     if (match) {
       secretRef.current = match[1];
-      history.replaceState(null, "", location.pathname + location.search);
     } else {
-      setSecretMissing(true);
+      const stored = loadCreatedSession();
+      const saved = getSavedPin(slug);
+      const secret =
+        stored?.slug === slug
+          ? stored.secret
+          : saved?.slug === slug
+            ? saved.secret
+            : null;
+      if (!secret) {
+        setSecretMissing(true);
+        return;
+      }
+      secretRef.current = secret;
     }
+    history.replaceState(null, "", location.pathname + location.search);
   }, []);
 
   const loadMeta = useCallback(async () => {
@@ -89,13 +103,14 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
   if (secretMissing) {
     return (
       <section className="state-card" data-state="invalid">
-        <h1>This control link is incomplete</h1>
-        <p>The full link ends with a code after <code>#s_</code>. Use the exact
-        link you were given (or the one saved on this device) — it can't be
-        reconstructed from here.</p>
+        <h1>You don't have permission to modify this location share</h1>
+        <p>This is the private page for managing a share, and its permission
+        code isn't saved on this device or in this link. If someone shared
+        their location with you, ask them to resend it — or start a share of
+        your own.</p>
         <p>
           <a className="button primary" href="/">
-            Go to the homepage
+            Home
           </a>
         </p>
       </section>
@@ -168,7 +183,7 @@ function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
           Share my location again
         </a>
         <a className="button secondary" href="/">
-          Go to the homepage
+          Home
         </a>
       </p>
     </section>
@@ -528,10 +543,6 @@ function ControlPanel(props: ControlPanelProps) {
             >
               {busy === "stop" ? "Stopping…" : "Stop sharing"}
             </button>
-            <InfoTooltip
-              label="About the control page"
-              text="Anyone holding this link can move or stop your share — never paste it into a chat."
-            />
           </div>
           {confirmStop && (
             <div className="confirm-row">
@@ -547,6 +558,19 @@ function ControlPanel(props: ControlPanelProps) {
             </div>
           )}
         </div>
+        {/* The live share status is important enough to sit above everything
+            else in the card, where it stays visible without scrolling. */}
+        <p className="field-note" role="status">
+          {updateError
+            ? updateError
+            : lastSentAt
+              ? position
+                ? `Updated ${relativeAge(now - lastSentAt)} · ±${Math.round(position.accuracy ?? 0)} m`
+                : `Updated ${relativeAge(now - lastSentAt)}`
+              : position
+                ? "Seen by viewers — no update sent from this screen yet"
+                : "No location shared yet"}
+        </p>
         {emailNotice && (
           <p className="field-note" role="status">
             {emailNotice === "sent"
@@ -590,13 +614,13 @@ function ControlPanel(props: ControlPanelProps) {
 
         <div className="control-section">
           <div className="button-row wrap">
-            <button className="button primary" type="button" onClick={updateNow} disabled={updating}>
+            <button className="button highlight" type="button" onClick={updateNow} disabled={updating}>
               {updating ? "Getting a fix…" : "Detect location"}
             </button>
             {moveMode ? (
               <>
                 <button
-                  className="button secondary"
+                  className="button ok"
                   type="button"
                   onClick={moveToTarget}
                   disabled={!moveTarget || busy === "move"}
@@ -615,7 +639,7 @@ function ControlPanel(props: ControlPanelProps) {
                 </button>
               </>
             ) : (
-              <button className="button secondary" type="button" onClick={() => setMoveMode(true)}>
+              <button className="button highlight" type="button" onClick={() => setMoveMode(true)}>
                 Move pin
               </button>
             )}
@@ -625,17 +649,6 @@ function ControlPanel(props: ControlPanelProps) {
               Tap the map to choose a point, then confirm.
             </p>
           )}
-          <p className="field-note" role="status">
-            {updateError
-              ? updateError
-              : lastSentAt
-                ? position
-                  ? `Updated ${relativeAge(now - lastSentAt)} · ±${Math.round(position.accuracy ?? 0)} m`
-                  : `Updated ${relativeAge(now - lastSentAt)}`
-                : position
-                  ? "Seen by viewers — no update sent from this screen yet"
-                  : "No location shared yet"}
-          </p>
 
           {/* One status line under the row reflects what is actually
               happening, including whether the screen is being held on. */}
@@ -683,7 +696,7 @@ function ControlPanel(props: ControlPanelProps) {
 
         <div className="control-section">
           <div className="expiry-row">
-            <button className="button secondary" type="button" onClick={() => extend(3_600)} disabled={busy?.startsWith("extend") ?? false}>
+            <button className="button highlight" type="button" onClick={() => extend(3_600)} disabled={busy?.startsWith("extend") ?? false}>
               +1 hour
             </button>
             <p className="field-note expiry-note">
@@ -722,6 +735,7 @@ function ControlPanel(props: ControlPanelProps) {
             </button>
             <InfoTooltip
               label="About the control link"
+              above
               text="Saved on this device and hidden until you replace it. Never paste it into a chat — anyone holding it can move or stop your share."
             />
           </div>
