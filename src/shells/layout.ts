@@ -75,6 +75,8 @@ ${opts.content}
   <span aria-hidden="true">·</span>
   ${footerContacts}
   <span aria-hidden="true">·</span>
+  <a href="https://github.com/jinglemansweep/findme">GitHub</a>
+  <span aria-hidden="true">·</span>
   <span class="osm-attribution">Map data © OpenStreetMap contributors (ODbL)</span>
 </footer>
 <script type="application/json" id="findme-boot">${bootJson(opts.boot ?? {})}</script>
