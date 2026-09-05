@@ -116,7 +116,7 @@ email sends count against your quota. Be deliberate with the email one.
 
 Check whether `configure()` is reaching the DO. If D1 says active and
 `getPosition()` returns `gone`, the Worker's self-healing path should re-issue
-`configure()` from the D1 row on first view (`PLAN.md` §7). If it is not, that
+`configure()` from the D1 row on first view. If it is not, that
 path is broken.
 
 ### Symptom: map blank or unlabelled
@@ -144,7 +144,7 @@ Reports arrive at `abuse@appts.uk`, usually with a pin link.
 
 1. Take the slug from the link.
 2. `UPDATE pins SET status='stopped' WHERE slug=?` **and** call `stop()` on the
-   DO — in that order per `PLAN.md` §8. Stopping only the D1 row leaves the
+   DO — in that order. Stopping only the D1 row leaves the
    position being served.
 3. Record the slug and the action. Do not record the reporter's details beyond
    what is needed to reply.
@@ -164,8 +164,7 @@ Configure before the first public link is shared:
 - **`limits.cpu_ms`** in `wrangler.jsonc` — the one genuine hard control.
 
 Review monthly under Billing → Billable Usage. Expect roughly $5/month at low
-volume, with Durable Object duration as the line that grows first. See `PLAN.md`
-§17.
+volume, with Durable Object duration as the line that grows first.
 
 ---
 

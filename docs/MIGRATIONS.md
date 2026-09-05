@@ -3,8 +3,7 @@
 Changing the shape of stored data: D1 schema, and the Durable Object storage that
 nobody calls a database but is one.
 
-Companion to `docs/RUNBOOK.md` (deploys, rollback) and `PLAN.md` §6–8 (the data
-model and why it is split the way it is).
+Companion to `docs/RUNBOOK.md` (deploys, rollback).
 
 ---
 

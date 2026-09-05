@@ -4,8 +4,11 @@ Anonymous, no-login, expiring location sharing on Cloudflare. Drop a pin,
 share one URL, and it deletes itself when the TTL runs out. Precise location
 lives only inside a per-pin Durable Object and never enters D1.
 
-The architecture, threat model and the reasoning behind every dropped
-feature are in [PLAN.md](./PLAN.md). Operating procedures live in
+[![deploy](https://github.com/jinglemansweep/findme/actions/workflows/deploy.yml/badge.svg)](https://github.com/jinglemansweep/findme/actions/workflows/deploy.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+
+Operating procedures live in
 [docs/RUNBOOK.md](./docs/RUNBOOK.md) (deploy, rollback, incidents),
 [docs/TILES.md](./docs/TILES.md) (basemap) and
 [docs/MIGRATIONS.md](./docs/MIGRATIONS.md) (schema changes).
@@ -18,6 +21,8 @@ feature are in [PLAN.md](./PLAN.md). Operating procedures live in
 /web        React + Vite + MapLibre SPA, built into /web/dist
 /migrations D1 migrations (forward-only)
 /test       Vitest via @cloudflare/vitest-plugin (runs against real workerd)
+/docs       Operational docs: RUNBOOK (deploy, rollback, incidents),
+            TILES (basemap), MIGRATIONS (schema changes)
 ```
 
 ## Local development
@@ -86,7 +91,7 @@ deploys staging on every push to `main` and production on tags.
 | `PMTILES_KEY` / `MAP_BOUNDS` | Which R2 archive to serve and the panning bounds it covers. They move together — going global is a two-value flip (docs/TILES.md §4). |
 | `TILES_MAXZOOM` | Max zoom of the archive; drives TileJSON `maxzoom` so MapLibre overzooms instead of blanking. |
 | `TURNSTILE_SITE_KEY` | Public site key for the create-form captcha; empty disables the widget. Pair with the `TURNSTILE_SECRET` secret. |
-| `KILL_SWITCH` | `"true"` disables pin creation and position writes while leaving existing pins readable (PLAN.md §17). |
+| `KILL_SWITCH` | `"true"` disables pin creation and position writes while leaving existing pins readable. |
 
 ## Notes for reviewers
 
@@ -104,6 +109,9 @@ deploys staging on every push to `main` and production on tags.
   `setWorkerUrl()` at them (CSP: `worker-src 'self' blob:`). The copy runs on
   every `build`/`dev` so the files always match the installed version.
 - `GET /api/pins/:slug` (with `X-Pin-Secret`) returns pin metadata for the
-  control page. It is a small addition to the API table in PLAN.md §5: the
-  control page needs the label/expiry to render, and the read is already
-  authorised against D1 on that path.
+  control page: the control page needs the label/expiry to render, and the
+  read is already authorised against D1 on that path.
+
+## Licence
+
+GPL-3.0-or-later — see [LICENSE](./LICENSE).
