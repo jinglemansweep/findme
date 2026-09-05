@@ -21,6 +21,8 @@ Operating procedures live in
 /web        React + Vite + MapLibre SPA, built into /web/dist
 /migrations D1 migrations (forward-only)
 /test       Vitest via @cloudflare/vitest-plugin (runs against real workerd)
+/e2e        Playwright specs driven against a local `wrangler dev`
+/scripts    CI helpers (make-ci-wrangler.mjs strips remote bindings)
 /docs       Operational docs: RUNBOOK (deploy, rollback, incidents),
             TILES (basemap), MIGRATIONS (schema changes)
 ```
