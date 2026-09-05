@@ -145,12 +145,12 @@ export function CreatePage({ config }: { config: AppConfig }) {
       <div className="info-card" ref={cardRef}>
         <div className="form-field">
           <div className="button-row wrap">
-            <button className="button primary" type="button" onClick={create} disabled={!canCreate}>
-              {creating ? "Sharing…" : "Share"}
-            </button>
-            <button className="button secondary" type="button" onClick={useMyLocation} disabled={locating}>
-              {locating ? "Finding you…" : "Use my location"}
-            </button>
+                <button className="button primary small" type="button" onClick={create} disabled={!canCreate}>
+                  {creating ? "Sharing…" : "Share"}
+                </button>
+                <button className="button highlight small" type="button" onClick={useMyLocation} disabled={locating}>
+                  {locating ? "Finding you…" : "Use my location"}
+                </button>
             <InfoTooltip text="Anyone with the share link can see this location until it expires. Nothing is stored after that." />
           </div>
           <p className="field-note">or tap the map to place your pin</p>

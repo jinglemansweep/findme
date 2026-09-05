@@ -32,6 +32,8 @@ export type PositionResult =
       at: number;
       /** Server clock at response time; clients compute ages from this. */
       now: number;
+      /** Current expiry — lets viewers follow an extension without a reload. */
+      expiresAt: number;
     };
 
 export class LivePin extends DurableObject<Env> {
@@ -47,7 +49,7 @@ export class LivePin extends DurableObject<Env> {
     if (!exp || Date.now() >= exp) return { gone: true };
     const pos = (await this.ctx.storage.get<StoredPosition>("pos")) ?? null;
     if (!pos || pos.v !== 1) return { pending: true };
-    return { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, at: pos.at, now: Date.now() };
+    return { lat: pos.lat, lng: pos.lng, accuracy: pos.accuracy, at: pos.at, now: Date.now(), expiresAt: exp };
   }
 
   /** Called only after the Worker has authorised the write against D1. */

@@ -29,18 +29,27 @@ export function ViewerPage({
   const { status, position } = usePositionPoller(endedBoot ? "" : slug);
   const [now, setNow] = useState(Date.now());
   const [recenterToken, setRecenterToken] = useState(0);
-  const [remaining, setRemaining] = useState(expiresAt - Date.now());
+  // The owner can extend the share while this page is open, so the polled
+  // expiry — not the one baked in at boot — is what the countdown follows.
+  const [currentExpiry, setCurrentExpiry] = useState(expiresAt);
+  const [remaining, setRemaining] = useState(currentExpiry - Date.now());
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (position?.expiresAt) setCurrentExpiry(position.expiresAt);
+  }, [position?.expiresAt]);
 
   useEffect(() => {
     const t = window.setInterval(() => {
       setNow(Date.now());
-      setRemaining(expiresAt - Date.now());
+      setRemaining(currentExpiry - Date.now());
     }, 1_000);
     return () => window.clearInterval(t);
-  }, [expiresAt]);
+  }, [currentExpiry]);
 
-  if (endedBoot || status === "ended" || remaining <= 0) {
+  // Ended is the server's call (410 within one poll of true expiry) — never
+  // the local countdown, which would lag behind a mid-share extension.
+  if (endedBoot || status === "ended") {
     return (
       <section className="state-card" data-state="ended">
         <h1>This share has ended</h1>
@@ -112,7 +121,9 @@ export function ViewerPage({
           </p>
         )}
 
-        <p className="expiry field-note">Expires in {countdown(remaining)}</p>
+        <p className="expiry field-note">
+          {remaining > 0 ? `Expires in ${countdown(remaining)}` : "The share has expired"}
+        </p>
 
         {position && (
           <details className="a11y-summary">

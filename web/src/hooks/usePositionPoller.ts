@@ -68,6 +68,7 @@ export function usePositionPoller(slug: string) {
         at: data.at,
         serverNow: data.now ?? Date.now(),
         fetchedAt: Date.now(),
+        expiresAt: data.expiresAt,
       });
       setStatus("connected");
       schedule(BASE_INTERVAL_MS);

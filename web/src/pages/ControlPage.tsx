@@ -548,7 +548,7 @@ function ControlPanel(props: ControlPanelProps) {
             <div className="confirm-row">
               <p>Stop sharing now? Your location is deleted and viewers see that the share has ended.</p>
               <div className="button-row">
-                <button className="button danger" type="button" onClick={stop} disabled={busy === "stop"}>
+                <button className="button danger small" type="button" onClick={stop} disabled={busy === "stop"}>
                   {busy === "stop" ? "Stopping…" : "Yes, stop sharing"}
                 </button>
                 <button className="button ghost" type="button" onClick={() => setConfirmStop(false)}>
@@ -614,7 +614,7 @@ function ControlPanel(props: ControlPanelProps) {
 
         <div className="control-section">
           <div className="button-row wrap">
-            <button className="button highlight" type="button" onClick={updateNow} disabled={updating}>
+            <button className="button highlight small" type="button" onClick={updateNow} disabled={updating}>
               {updating ? "Getting a fix…" : "Detect location"}
             </button>
             {moveMode ? (
@@ -639,7 +639,7 @@ function ControlPanel(props: ControlPanelProps) {
                 </button>
               </>
             ) : (
-              <button className="button highlight" type="button" onClick={() => setMoveMode(true)}>
+              <button className="button highlight small" type="button" onClick={() => setMoveMode(true)}>
                 Move pin
               </button>
             )}
@@ -696,7 +696,7 @@ function ControlPanel(props: ControlPanelProps) {
 
         <div className="control-section">
           <div className="expiry-row">
-            <button className="button highlight" type="button" onClick={() => extend(3_600)} disabled={busy?.startsWith("extend") ?? false}>
+            <button className="button highlight small" type="button" onClick={() => extend(3_600)} disabled={busy?.startsWith("extend") ?? false}>
               +1 hour
             </button>
             <p className="field-note expiry-note">

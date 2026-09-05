@@ -26,6 +26,8 @@ export interface Position {
   at: number;
   /** Server clock at the moment of the response (viewer poll). */
   now?: number;
+  /** Current expiry (viewer poll) — follows extensions made after page load. */
+  expiresAt?: number;
 }
 
 export interface PinMeta {
