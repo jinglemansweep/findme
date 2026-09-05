@@ -386,7 +386,9 @@ describe("shells", () => {
     // The not-found card is fully server-rendered: booting the SPA over it
     // would flip it to a misleading "share has ended" (the DO reads 410 for a
     // never-configured slug).
-    expect(await notFound.text()).not.toContain("assets/app.js");
+    const notFoundHtml = await notFound.text();
+    expect(notFoundHtml).not.toContain("assets/app.js");
+    expect(notFoundHtml).toContain('href="https://github.com/jinglemansweep/findme"');
     expect((await fetchPage("/u/0123456789AB")).status).toBe(404);
 
     const pin = await createPin();
