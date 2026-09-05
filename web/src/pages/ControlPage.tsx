@@ -55,6 +55,14 @@ export function ControlPage({ config, slug, endedBoot, handedSecret, onExitToCre
   const { status, position } = usePositionPoller(slug);
   const publicUrl = `${location.origin}/${slug}`;
 
+  // Seed the map with the position stored at creation (this device's saved
+  // pin): the map opens on the pin instead of the UK default while the
+  // first position poll is still in flight.
+  const [mapSeed] = useState<[number, number] | null>(() => {
+    const saved = getSavedPin(slug);
+    return saved?.lat != null && saved?.lng != null ? [saved.lng, saved.lat] : null;
+  });
+
   // Arriving via an in-page transition means no server shell was rendered
   // for this page: apply the control shell's title (with the non-production
   // label the server would have stamped) and dark body class.
@@ -178,6 +186,7 @@ export function ControlPage({ config, slug, endedBoot, handedSecret, onExitToCre
       meta={meta}
       onMetaChanged={loadMeta}
       onExitToCreate={onExitToCreate}
+      initialCenter={mapSeed}
       publicUrl={publicUrl}
       position={position}
       positionStatus={status}
@@ -234,6 +243,8 @@ interface ControlPanelProps {
   meta: PinMeta;
   onMetaChanged: () => Promise<void>;
   onExitToCreate?: () => void;
+  /** Camera seed from the saved pin — see ControlPage. */
+  initialCenter?: [number, number] | null;
   publicUrl: string;
   position: ReturnType<typeof usePositionPoller>["position"];
   positionStatus: ReturnType<typeof usePositionPoller>["status"];
@@ -241,7 +252,7 @@ interface ControlPanelProps {
 }
 
 function ControlPanel(props: ControlPanelProps) {
-  const { config, slug, secretRef, meta, onMetaChanged, onExitToCreate, publicUrl, position, emailNotice } = props;
+  const { config, slug, secretRef, meta, onMetaChanged, onExitToCreate, initialCenter, publicUrl, position, emailNotice } = props;
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState(false);
   const [copiedControl, setCopiedControl] = useState(false);
@@ -560,6 +571,7 @@ function ControlPanel(props: ControlPanelProps) {
         <MapView
           config={config}
           position={moveTarget ?? position}
+          initialCenter={initialCenter}
           follow
           fitAccuracyOnFirstFix
           overlayRef={cardRef}

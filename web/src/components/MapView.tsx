@@ -19,6 +19,9 @@ import { buildPmtilesStyle, mapUiColors, preferredScheme } from "../mapStyle";
 export interface MapViewProps {
   config: AppConfig;
   position?: { lat: number; lng: number; accuracy?: number | null } | null;
+  /** Camera seed used at construction: open on a known position instead of
+   *  the UK default while the first fix/poll is still in flight. */
+  initialCenter?: [number, number] | null;
   /** Recenter on position changes until the user pans. */
   follow?: boolean;
   /** Increment to force a recenter (the "recenter" button). */
@@ -80,7 +83,7 @@ export function MapView(props: MapViewProps) {
     const map = new Map({
       container: containerRef.current,
       style,
-      center: DEFAULT_CENTER,
+      center: props.initialCenter ?? DEFAULT_CENTER,
       zoom: DEFAULT_ZOOM,
       ...(config.basemap.kind === "pmtiles" && config.mapBounds
         ? { maxBounds: config.mapBounds as [[number, number], [number, number]] }
@@ -168,15 +171,20 @@ export function MapView(props: MapViewProps) {
     if (!map || !position) return;
 
     const lngLat: [number, number] = [position.lng, position.lat];
-    const apply = () => {
-      if (!markerRef.current) {
-        markerRef.current = new Marker({ color: mapUiColors(preferredScheme()).marker })
-          .setLngLat(lngLat)
-          .addTo(map);
-      } else {
-        markerRef.current.setLngLat(lngLat);
-      }
 
+    // The marker is a plain DOM overlay: it goes on screen immediately,
+    // before the style and tiles have loaded, so the pin is never waiting
+    // on the basemap.
+    if (!markerRef.current) {
+      markerRef.current = new Marker({ color: mapUiColors(preferredScheme()).marker })
+        .setLngLat(lngLat)
+        .addTo(map);
+    } else {
+      markerRef.current.setLngLat(lngLat);
+    }
+
+    // The accuracy circle and the camera are style-backed — wait for it.
+    const apply = () => {
       const source = map.getSource("accuracy") as GeoJSONSource | undefined;
       if (source) {
         const circle =
