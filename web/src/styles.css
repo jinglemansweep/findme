@@ -452,11 +452,12 @@ main {
 }
 
 /* Message + expiry share one row to keep the overlay compact: the message
-   takes the remaining width, the select keeps a comfortable fixed width. */
+   takes the remaining width, the select keeps a comfortable fixed width.
+   Top-aligned so the two labels sit on the same line. */
 .field-row {
   display: flex;
   gap: 0.6rem;
-  align-items: flex-end;
+  align-items: flex-start;
 }
 
 .field-row .form-field {

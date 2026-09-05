@@ -167,6 +167,9 @@ function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
         <a className="button primary" href="/">
           Share my location again
         </a>
+        <a className="button secondary" href="/">
+          Go to the homepage
+        </a>
       </p>
     </section>
   );
@@ -586,7 +589,6 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section">
-          <h2>Your location</h2>
           <div className="button-row wrap">
             <button className="button primary" type="button" onClick={updateNow} disabled={updating}>
               {updating ? "Getting a fix…" : "Detect location"}
@@ -720,13 +722,13 @@ function ControlPanel(props: ControlPanelProps) {
             </button>
             <InfoTooltip
               label="About the control link"
-              text="Saved on this device. Never paste it into a chat — anyone holding it can move or stop your share."
+              text="Saved on this device and hidden until you replace it. Never paste it into a chat — anyone holding it can move or stop your share."
             />
           </div>
           {/* The link itself is only revealed right after a rotation — at any
               other time showing it invites pasting the control link where the
               share link belongs. */}
-          {rotated ? (
+          {rotated && (
             <div className="copy-row">
               <input
                 type="text"
@@ -736,10 +738,6 @@ function ControlPanel(props: ControlPanelProps) {
                 aria-label="Your control link"
               />
             </div>
-          ) : (
-            <p className="field-note">
-              Hidden until you replace it — then the new link is shown here and saved on this device.
-            </p>
           )}
           <span className="visually-hidden" role="status">
             {rotateArmed ? "Tap again to replace the control link" : ""}

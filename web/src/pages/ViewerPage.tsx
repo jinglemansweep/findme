@@ -46,6 +46,11 @@ export function ViewerPage({
         <h1>This share has ended</h1>
         <p>The person sharing their location stopped the share, or it expired.
         Their position is no longer available.</p>
+        <p>
+          <a className="button primary" href="/">
+            Share my location
+          </a>
+        </p>
       </section>
     );
   }
