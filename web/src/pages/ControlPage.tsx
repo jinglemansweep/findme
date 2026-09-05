@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "../api";
 import { InfoTooltip } from "../components/InfoTooltip";
-import { CheckIcon, CopyIcon, ShareIcon } from "../components/icons";
+import { CheckIcon, CopyIcon, RotateIcon, ShareIcon } from "../components/icons";
 import { MapView } from "../components/MapView";
 import { usePositionPoller } from "../hooks/usePositionPoller";
-import { clearCreatedSessionFor } from "../lib/createdSession";
+import { clearCreatedSessionFor, loadEmailNotice } from "../lib/createdSession";
 import { copyText } from "../lib/clipboard";
 import { countdown, formatExpiry, relativeAge } from "../lib/format";
 import { distanceMetres } from "../lib/geo";
@@ -64,6 +64,19 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
     if (!secretMissing) void loadMeta();
   }, [secretMissing, loadMeta]);
 
+  // A definitive failure (401 rotated secret / 404 unknown slug) means the
+  // stored create-page session points here with a dead secret: drop it so
+  // the create page stops redirecting to this link.
+  useEffect(() => {
+    if (metaError === 401 || metaError === 404) clearCreatedSessionFor(slug);
+  }, [metaError, slug]);
+
+  // One-time recovery-email result, handed over from the create page.
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  useEffect(() => {
+    setEmailNotice(loadEmailNotice(slug));
+  }, [slug]);
+
   if (secretMissing) {
     return (
       <section className="state-card" data-state="invalid">
@@ -117,6 +130,7 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
       publicUrl={publicUrl}
       position={position}
       positionStatus={status}
+      emailNotice={emailNotice}
     />
   );
 }
@@ -124,7 +138,7 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
 function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
   useEffect(() => {
     removeSavedPin(slug);
-    // The create page must not resurrect its "share is live" panel for this.
+    // The create page must not redirect back to this dead control link.
     clearCreatedSessionFor(slug);
   }, [slug]);
   return (
@@ -153,12 +167,14 @@ interface ControlPanelProps {
   publicUrl: string;
   position: ReturnType<typeof usePositionPoller>["position"];
   positionStatus: ReturnType<typeof usePositionPoller>["status"];
+  emailNotice: string | null;
 }
 
 function ControlPanel(props: ControlPanelProps) {
-  const { config, slug, secretRef, meta, onMetaChanged, publicUrl, position } = props;
+  const { config, slug, secretRef, meta, onMetaChanged, publicUrl, position, emailNotice } = props;
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState(false);
+  const [copiedControl, setCopiedControl] = useState(false);
   const [shared, setShared] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -179,7 +195,9 @@ function ControlPanel(props: ControlPanelProps) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmStop, setConfirmStop] = useState(false);
   const [confirmRotate, setConfirmRotate] = useState(false);
-  const [rotated, setRotated] = useState<{ privateUrl: string } | null>(null);
+  // Re-render trigger for after a rotation: the control-link row reads the
+  // fresh secret from secretRef.
+  const [rotated, setRotated] = useState(false);
 
   useEffect(() => {
     const t = window.setInterval(() => {
@@ -339,9 +357,9 @@ function ControlPanel(props: ControlPanelProps) {
       secretRef.current = result.secret;
       const saved = getSavedPin(slug);
       if (saved) savePin({ ...saved, secret: result.secret });
-      // The stored create-page panel would link to the dead old control URL.
+      // The stored create-page session would redirect to this dead control URL.
       clearCreatedSessionFor(slug);
-      setRotated({ privateUrl: result.privateUrl });
+      setRotated(true);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't rotate the link.");
     } finally {
@@ -354,6 +372,16 @@ function ControlPanel(props: ControlPanelProps) {
     const ok = await copyText(publicUrl);
     setCopied(ok);
     if (ok) window.setTimeout(() => setCopied(false), 2_000);
+  }
+
+  // Rebuilt from the in-memory secret — the same URL the create page
+  // redirected through, minus the fragment the page stripped on arrival.
+  const controlUrl = `${location.origin}/u/${slug}#s_${secretRef.current ?? ""}`;
+
+  async function copyControlLink() {
+    const ok = await copyText(controlUrl);
+    setCopiedControl(ok);
+    if (ok) window.setTimeout(() => setCopiedControl(false), 2_000);
   }
 
   // Opens the OS share sheet for the PUBLIC link — never the control link.
@@ -415,16 +443,24 @@ function ControlPanel(props: ControlPanelProps) {
             </div>
           )}
         </div>
+        {emailNotice && (
+          <p className="field-note" role="status">
+            {emailNotice === "sent"
+              ? "Recovery email sent — check your inbox (and spam)."
+              : emailNotice === "rate-limited"
+                ? "Too many recovery emails sent to that address recently — copy the control link below."
+                : "The recovery email could not be sent — copy the control link below."}
+          </p>
+        )}
         <div className="copy-block">
-          <div className="label-row">
-            <h2>Let people follow you</h2>
-            <InfoTooltip
-              label="About the share link"
-              text="This is the safe link to paste into chats — it only shows your location. The private control link warned about above must never be shared."
-            />
-          </div>
           <div className="copy-row">
-            <input type="text" readOnly value={publicUrl} onFocus={(e) => e.target.select()} />
+            <input
+              type="text"
+              readOnly
+              value={publicUrl}
+              onFocus={(e) => e.target.select()}
+              aria-label="Your share link"
+            />
             {canNativeShare && (
               <button
                 className={`button icon-button${shared ? " copied" : ""}`}
@@ -540,15 +576,42 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section danger-zone">
-          <h2>Link safety</h2>
-          {rotated ? (
-            <div className="copy-block">
-              <p className="field-note">New control link (saved on this device, old one no longer works):</p>
-              <div className="copy-row">
-                <input type="text" readOnly value={rotated.privateUrl} onFocus={(e) => e.target.select()} />
-              </div>
-            </div>
-          ) : confirmRotate ? (
+          <div className="label-row">
+            <h2>Control link</h2>
+            <InfoTooltip
+              label="About the control link"
+              text="Saved on this device. Never paste it into a chat — anyone holding it can move or stop your share."
+            />
+          </div>
+          <div className="copy-row">
+            <input
+              type="text"
+              readOnly
+              value={controlUrl}
+              onFocus={(e) => e.target.select()}
+              aria-label="Your control link"
+            />
+            <button
+              className="button icon-button"
+              type="button"
+              onClick={() => setConfirmRotate(true)}
+              disabled={busy === "rotate"}
+              aria-label="Replace control link"
+              title="Replace control link"
+            >
+              <RotateIcon />
+            </button>
+            <button
+              className={`button icon-button${copiedControl ? " copied" : ""}`}
+              type="button"
+              onClick={copyControlLink}
+              aria-label="Copy control link"
+              title="Copy control link"
+            >
+              {copiedControl ? <CheckIcon /> : <CopyIcon />}
+            </button>
+          </div>
+          {confirmRotate && (
             <div className="confirm-row">
               <p>Replace the control link? The previous one stops working immediately.</p>
               <div className="button-row">
@@ -560,10 +623,11 @@ function ControlPanel(props: ControlPanelProps) {
                 </button>
               </div>
             </div>
-          ) : (
-            <button className="button secondary" type="button" onClick={() => setConfirmRotate(true)}>
-              Replace control link
-            </button>
+          )}
+          {rotated && (
+            <p className="field-note" role="status">
+              New link saved on this device — the old one no longer works.
+            </p>
           )}
         </div>
 

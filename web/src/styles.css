@@ -571,20 +571,6 @@ select {
   margin: 0;
 }
 
-/* Countdown and Edit share the bottom row of the live panel. */
-.live-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-top: 0.7rem;
-}
-
-.live-row .field-note {
-  flex: 1;
-  margin: 0;
-}
-
 /* ---- control page (distinct dark-accented theme, §3 anti-footgun) ---- */
 
 .shell-control {
