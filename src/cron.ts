@@ -4,7 +4,7 @@ import type { Env } from "./env";
  * Cron sweep (every 10 min): remove expired rows — both drained tombstones
  * (status='stopped') and active rows past their expiry. The DO alarm wipes
  * the position; this reclaims the D1 row so the slug can eventually read 404
- * instead of 410 (§6, §8).
+ * instead of 410.
  *
  * Batched: D1 bills on rows scanned, and a pathological backlog should not
  * pin the invocation against limits.cpu_ms.

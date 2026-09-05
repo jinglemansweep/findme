@@ -44,6 +44,9 @@ const CSP = [
   // its fallback path.
   "worker-src 'self' blob:",
   "frame-src https://challenges.cloudflare.com",
+  // The app is never legitimately framed (Turnstile is frame-src, the reverse
+  // direction); belt-and-braces with the X-Frame-Options header below.
+  "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
@@ -57,6 +60,12 @@ export function withSecurityHeaders(
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", opts.referrerPolicy ?? "strict-origin-when-cross-origin");
   headers.set("Permissions-Policy", "geolocation=(self)");
+  headers.set("X-Frame-Options", "DENY");
+  // Unconditional is correct: production traffic is https by the time it
+  // reaches routing (plain http is 308'd earlier), and RFC 6797 makes
+  // browsers ignore the header over plain http anyway — so local dev is
+  // unaffected. includeSubDomains only reaches subdomains of our own hosts.
+  headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   if (opts.csp !== false && !headers.has("Content-Security-Policy")) {
     headers.set("Content-Security-Policy", CSP);
   }
@@ -81,7 +90,7 @@ export function html(
   });
 }
 
-/** Truthy when the KILL_SWITCH var disables writes (PLAN.md §17). */
+/** Truthy when the KILL_SWITCH var disables writes. */
 export function killSwitchOn(env: Env): boolean {
   const v = env.KILL_SWITCH?.trim().toLowerCase();
   return v === "1" || v === "true" || v === "on";

@@ -1,14 +1,19 @@
 name: deploy
 
 # Migrations before deploy, always — the CI job must fail if the migration
-# step fails (docs/RUNBOOK.md §2). Staging runs on every push to main;
+# step fails (docs/RUNBOOK.md §2). Pull requests run the test and e2e suites
+# only (no Cloudflare secrets needed); staging deploys on every push to main;
 # production is gated behind a version tag.
 
 on:
   push:
     branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -32,8 +37,25 @@ jobs:
       - run: npx wrangler deploy --env production --dry-run --outdir /tmp/dryrun-production | tee /tmp/dryrun-production.log
       - run: grep -q "LIVE_PIN" /tmp/dryrun-production.log
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Playwright drives the real app in Chromium against `wrangler dev`
+      # (local workerd + D1 + DOs, no Cloudflare credentials — see
+      # scripts/make-ci-wrangler.mjs).
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CI: "1"
+
   deploy-staging:
-    needs: test
+    needs: [test, e2e]
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +86,7 @@ jobs:
           check sh -c 'curl -fsS --max-time 30 https://findme-staging.ptrees.workers.dev/privacy | grep -q "There are no accounts"'
 
   deploy-production:
-    needs: test
+    needs: [test, e2e]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: production

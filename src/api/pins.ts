@@ -7,7 +7,7 @@ import { generateSlug, isSlug, SLUG_LENGTH } from "../lib/slug";
 import { verifyTurnstile } from "../lib/turnstile";
 import { sendRecoveryEmail } from "../email/send";
 
-/** Bounded TTL set, hard maximum, no "forever" (PLAN.md §5). */
+/** Bounded TTL set, hard maximum, no "forever". */
 export const TTL_OPTIONS_SECONDS = [900, 3600, 14400, 86400, 604800] as const;
 const MAX_TTL_MS = 604_800_000;
 const LABEL_MAX_CHARS = 140;
@@ -142,7 +142,7 @@ export async function createPin(request: Request, env: Env, url: URL): Promise<R
   const now = Date.now();
   const expiresAt = now + ttlSeconds * 1000;
 
-  // Creation order (§8): the D1 row first — it is authoritative for
+  // Creation order: the D1 row first — it is authoritative for
   // existence. If DO init then fails, we have a valid pin with no position
   // yet, which the self-healing path repairs on first view.
   let slug = "";
@@ -190,7 +190,7 @@ export async function createPin(request: Request, env: Env, url: URL): Promise<R
 }
 
 export async function getPosition(env: Env, slug: string): Promise<Response> {
-  // This path must not touch D1 (§4/§8) — the DO alone decides what to serve.
+  // This path must not touch D1 — the DO alone decides what to serve.
   if (!isSlug(slug)) return errorJson(404, "not found");
   const result = await getPinStub(env, slug).getPosition();
   if ("gone" in result) return new Response(null, { status: 410 });
@@ -215,7 +215,7 @@ export async function setPosition(request: Request, env: Env, slug: string): Pro
   const stub = getPinStub(env, slug, request);
   let result = await stub.setPosition(parsed);
   if ("gone" in result) {
-    // Self-heal (§7): D1 says active but the DO lost its configuration.
+    // Self-heal: D1 says active but the DO lost its configuration.
     if (row.expires_at > now) {
       await stub.configure(row.expires_at);
       result = await stub.setPosition(parsed);
@@ -264,7 +264,7 @@ export async function patchPin(request: Request, env: Env, slug: string): Promis
   }
 
   if (newExpiresAt !== null && newExpiresAt < row.expires_at) {
-    // Shortening reduces access: apply to the DO first, then D1 (§8).
+    // Shortening reduces access: apply to the DO first, then D1.
     await getPinStub(env, slug, request).configure(newExpiresAt);
     await updatePinRow(env, slug, newExpiresAt, label);
   } else if (newExpiresAt !== null) {
@@ -304,8 +304,9 @@ export async function stopPin(request: Request, env: Env, slug: string): Promise
   if ("response" in auth) return auth.response;
 
   // Stop is never blocked by KILL_SWITCH: stopping an existing share is
-  // always the privacy-positive action (§17 gates creation and movement).
-  // Reduce-access ordering (§8): wipe the DO first — the stop control has to
+  // always the privacy-positive action (the switch gates creation and
+  // movement only).
+  // Reduce-access ordering: wipe the DO first — the stop control has to
   // actually stop things — then tombstone the row so viewers get 410 not 404.
   await getPinStub(env, slug, request).stop();
   await env.DB.prepare("UPDATE pins SET status = 'stopped' WHERE slug = ?").bind(slug).run();

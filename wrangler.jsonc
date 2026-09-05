@@ -7,7 +7,7 @@
   // Since compat date 2025-04-01, navigation requests that miss a static
   // asset would otherwise be answered with index.html without invoking the
   // Worker ("navigation requests prefer asset serving"). This flag restores
-  // the old behaviour so the shells are reachable. See PLAN.md §3/§5.
+  // the old behaviour so the shells are reachable.
   "compatibility_flags": ["assets_navigation_has_no_effect"],
   "assets": {
     "directory": "./web/dist",
@@ -27,7 +27,7 @@
   ],
   "r2_buckets": [
     // `remote: true` — `wrangler dev` reads the real bucket; the basemap
-    // archive is multi-GB and a local copy drifts out of sync (§13).
+    // archive is multi-GB and a local copy drifts out of sync.
     { "binding": "TILES", "bucket_name": "findme-tiles", "remote": true },
   ],
   "vars": {
@@ -42,7 +42,7 @@
     // TURNSTILE_SECRET`) to require a captcha on pin creation.
     "TURNSTILE_SITE_KEY": "",
     // "true" disables pin creation and position writes while leaving
-    // existing pins readable (PLAN.md §17).
+    // existing pins readable.
     "KILL_SWITCH": "false",
   },
   "durable_objects": {
@@ -72,7 +72,7 @@
   "send_email": [
     // Sender restricted, destination unrestricted. Requires the sending
     // address to be sendable via Cloudflare Email Routing on the appts.uk
-    // zone (see PLAN.md §9). Add "remote": true to this binding for local
+    // zone (see docs/RUNBOOK.md §8). Add "remote": true to this binding for local
     // dev when working on email.
     { "name": "EMAIL", "allowed_sender_addresses": ["noreply@find.appts.uk"] },
   ],

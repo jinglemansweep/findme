@@ -6,7 +6,7 @@ export interface HandoffTarget {
 }
 
 /**
- * Map hand-off links (PLAN.md §12). Detect the platform and surface the two
+ * Map hand-off links. Detect the platform and surface the two
  * or three that make sense — not all five.
  */
 export function handoffTargets(

@@ -7,3 +7,6 @@ web/public/vendor/
 *.log
 .DS_Store
 coverage/
+wrangler.ci.jsonc
+test-results/
+playwright-report/

@@ -12,8 +12,8 @@ import { buildPmtilesStyle, mapUiColors, preferredScheme } from "../mapStyle";
 
 /**
  * One imperative MapLibre instance held in a ref and driven from effects —
- * no React wrapper (PLAN.md §14). The marker is a DOM marker; the accuracy
- * radius is a GeoJSON fill layer (§4: render the radius, not a bare dot).
+ * no React wrapper. The marker is a DOM marker; the accuracy
+ * radius is a GeoJSON fill layer (render the radius, not a bare dot).
  */
 
 export interface MapViewProps {

@@ -131,7 +131,7 @@ async function handleApi(request: Request, env: Env, url: URL): Promise<Response
 
 /**
  * Public shell. This is a page view, not the poll path, so a D1 read here is
- * fine (§8) — and it is where the lazy self-heal happens: if D1 says the pin
+ * fine — and it is where the lazy self-heal happens: if D1 says the pin
  * is active but the DO has no expiry (creation's DO step failed), re-issue
  * configure() from the row.
  */

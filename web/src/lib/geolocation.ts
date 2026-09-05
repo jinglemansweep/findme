@@ -1,4 +1,4 @@
-/** One-shot high-accuracy fix for the manual update buttons (§4). */
+/** One-shot high-accuracy fix for the manual update buttons. */
 export function getCurrentPosition(options?: PositionOptions): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!("geolocation" in navigator)) {

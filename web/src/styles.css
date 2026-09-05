@@ -1,6 +1,6 @@
 /* Find Me — mobile-first. Three visually distinct shells:
    .shell-create / .shell-view (light) vs .shell-control (dark control theme,
-   the §3 anti-footgun). */
+   the anti-footgun). */
 
 :root {
   --ink: #2b2721;
@@ -645,7 +645,7 @@ select {
   margin: 0;
 }
 
-/* ---- control page (distinct dark-accented theme, §3 anti-footgun) ---- */
+/* ---- control page (distinct dark-accented theme, anti-footgun) ---- */
 
 .shell-control {
   --paper: #efe9df;
@@ -795,7 +795,7 @@ select {
     --disconnected-line: #6b2f2a;
   }
 
-  /* The control shell keeps its own §3 identity: a flatter, less warm dark
+  /* The control shell keeps its own identity: a flatter, less warm dark
      than the standard pages, with the near-black banner as its anchor. */
   .shell-control {
     --paper: #121110;

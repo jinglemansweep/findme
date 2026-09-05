@@ -15,7 +15,7 @@ describe("EmailLimiter", () => {
     expect(await runDurableObjectAlarm(stub)).toBe(true);
   });
 
-  it("deletes itself when the window ends (§11: never accumulate DO storage)", async () => {
+  it("deletes itself when the window ends (never accumulate DO storage)", async () => {
     const stub = e.EMAIL_LIMITER.get(e.EMAIL_LIMITER.idFromName("another-recipient"));
     await stub.check();
     await runDurableObjectAlarm(stub);

@@ -9,7 +9,7 @@ export interface Env {
   LIVE_PIN: DurableObjectNamespace<LivePin>;
   EMAIL_LIMITER: DurableObjectNamespace<EmailLimiter>;
 
-  /** Native rate limiter (per-colo approximate counting — PLAN.md §11). */
+  /** Native rate limiter (per-colo approximate counting). */
   SLUG_LOOKUPS: RateLimit;
   PIN_CREATES: RateLimit;
 

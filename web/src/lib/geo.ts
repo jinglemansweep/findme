@@ -1,4 +1,4 @@
-/** Great-circle distance in metres (watch-position throttling, §4). */
+/** Great-circle distance in metres (watch-position throttling). */
 export function distanceMetres(
   a: { lat: number; lng: number },
   b: { lat: number; lng: number },
@@ -16,7 +16,7 @@ export function distanceMetres(
 
 /**
  * A circle as a GeoJSON Polygon — the viewer renders the GPS accuracy radius,
- * never a bare dot (§4).
+ * never a bare dot.
  */
 export function accuracyCircle(lat: number, lng: number, radiusMetres: number): GeoJSON.Feature<GeoJSON.Polygon> | null {
   if (!Number.isFinite(radiusMetres) || radiusMetres <= 0) return null;

@@ -14,7 +14,7 @@ export interface AppConfig {
     | { kind: "pmtiles"; tilesUrl: string }
     | { kind: "style"; url: string };
   /** [[west, south], [east, north]] — the archive's coverage; constrains
-   *  panning so users never see blank ocean outside the extract (§13). */
+   *  panning so users never see blank ocean outside the extract. */
   mapBounds: [[number, number], [number, number]] | null;
   mapMaxZoom: number | null;
   turnstileSiteKey: string | null;

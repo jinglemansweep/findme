@@ -7,7 +7,7 @@ export function clientIp(request: Request): string {
 
 /**
  * IP hashed with a daily-rotating salt held in a Worker secret: abuse control
- * without retaining anything identifying (PLAN.md §11). The day is part of the
+ * without retaining anything identifying. The day is part of the
  * salt input so counters (and any leakage) reset daily.
  */
 export async function ipHash(env: Env, request: Request): Promise<string> {

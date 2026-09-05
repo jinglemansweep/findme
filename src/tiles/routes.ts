@@ -11,7 +11,7 @@ import {
 } from "./pmtiles";
 
 /**
- * PMTiles range-request proxy → R2 (PLAN.md §5, docs/TILES.md).
+ * PMTiles range-request proxy → R2 (docs/TILES.md).
  *
  * MapLibre fetches individual tiles from `/tiles/{z}/{x}/{y}.mvt`; each
  * request is resolved through the archive's internal directory with two or

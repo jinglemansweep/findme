@@ -13,7 +13,7 @@ function formatExpiry(expiresAtMs: number): string {
 
 /**
  * The one recovery path for a lost private URL: sent once, at creation,
- * best-effort (PLAN.md §9).
+ * best-effort.
  *
  * The body is pure template — no label, no user-controlled text of any kind.
  * Otherwise it would be a free channel to send arbitrary content to
@@ -30,7 +30,7 @@ export async function sendRecoveryEmail(
   const address = to.trim().toLowerCase();
   if (address.length > 254 || !EMAIL_RE.test(address)) return "skipped";
 
-  // Per-recipient quota needs exact global counting (§11) — one EmailLimiter
+  // Per-recipient quota needs exact global counting — one EmailLimiter
   // object per sha256(recipient), which deletes itself when the window ends.
   let allowed = true;
   try {

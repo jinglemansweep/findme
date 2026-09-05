@@ -4,7 +4,7 @@ import type { Env } from "../env";
 /**
  * One LivePin per pin. It holds the only copy of the precise position and
  * wipes itself on alarm. D1 decides who may write; this object decides what
- * may be served (PLAN.md §7).
+ * may be served.
  *
  * Storage shape is versioned from release one (docs/MIGRATIONS.md §6) —
  * objects created under an old shape live on for up to 7 days after a deploy.
@@ -72,13 +72,13 @@ export class LivePin extends DurableObject<Env> {
   async configure(expiresAtMs: number): Promise<{ ok: true }> {
     await this.ctx.storage.put<StoredExpiry>("exp", { v: 1, at: expiresAtMs });
     // A DO has one alarm at a time; setAlarm overwrites. Each call is billed
-    // as one row written (§8), so never call this on the hot path.
+    // as one row written, so never call this on the hot path.
     await this.ctx.storage.setAlarm(expiresAtMs);
     return { ok: true };
   }
 
   /**
-   * Self-healing path (§7): if D1 says the pin is active but this object has
+   * Self-healing path: if D1 says the pin is active but this object has
    * no `exp` (D1 row written, DO init failed), re-issue the configuration
    * from the D1 row — lazily, on first view.
    */

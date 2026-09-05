@@ -55,8 +55,17 @@ The two-release pattern for removing a column:
 
 ### CI
 
-`cloudflare/wrangler-action` with an API token scoped to Workers Scripts edit, D1
-edit, and R2 edit. Store as a repository secret; never commit it.
+`.github/workflows/deploy.yml` runs `npx wrangler` directly, authenticated with
+a repository secret (`CLOUDFLARE_API_TOKEN`) holding an API token scoped to
+Workers Scripts edit, D1 edit, and R2 edit. Store as a repository secret; never
+commit it.
+
+Pull requests run the typecheck, the workerd-backed unit suite, the binding
+dry-runs and the Playwright e2e suite — all without Cloudflare secrets, so
+fork PRs are fully tested too. The e2e job generates `wrangler.ci.jsonc`
+(`scripts/make-ci-wrangler.mjs`) with the remote R2 binding stripped, because
+remote bindings make `wrangler dev` demand an API token; without the bucket the
+app falls back to the public basemap.
 
 ```yaml
 - run: npx wrangler d1 migrations apply findme --env production --remote
@@ -182,6 +191,23 @@ wrangler secret put IP_SALT --env production
 
 Rotating `IP_SALT` invalidates in-flight rate limit counters. Harmless, but
 expect a brief window where limits reset.
+
+### Enabling Turnstile (required before public launch)
+
+Without the captcha, pin creation is gated only by the per-IP rate limit
+(approximate, per-colo), which makes the recovery-email sender a spam surface
+over this domain's reputation. Enable it per environment:
+
+1. Dashboard → Turnstile → **Add site**. Domains: the environment's host
+   (`find.appts.uk`, plus `find-stg.appts.uk` for staging). Take the *site key*.
+2. Put the site key in `wrangler.jsonc` → `vars.TURNSTILE_SITE_KEY` for that
+   environment, and deploy. (Empty string = widget disabled; that is the
+   current state in this file until you do this.)
+3. Store the *secret key* out of band:
+   `wrangler secret put TURNSTILE_SECRET --env production` (and `--env staging`).
+4. Verify on staging: the create form shows the challenge, and a create with it
+   succeeds. With `TURNSTILE_SECRET` set but the widget absent, every create
+   fails with `captcha verification failed` — the two settings move together.
 
 ---
 

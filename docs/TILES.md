@@ -21,7 +21,7 @@ adjacent tiles sit adjacent in the file. Clients fetch individual tiles with HTT
 **range requests** — "give me bytes 4,182,000–4,183,500" — so a complete basemap
 is a single object in R2 with no tile server.
 
-Three things must exist for a map to render correctly:
+Four things must exist for a map to render correctly:
 
 | Piece | What it is | Where it lives |
 | --- | --- | --- |

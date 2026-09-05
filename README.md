@@ -47,13 +47,25 @@ otherwise no-op locally).
 ## Tests
 
 ```bash
-npm test    # builds the SPA first, then runs the workerd-backed suite
+npm test            # builds the SPA first, then runs the workerd-backed suite
+npm run test:e2e    # Playwright: boots `wrangler dev` locally, drives Chromium
 ```
 
-The suite covers the pin lifecycle, LivePin read-side expiry enforcement and
-alarms, the EmailLimiter window, the cron sweep, label escaping in the
-shells, and the PMTiles proxy against a synthetic archive (including leaf
-directories).
+The unit suite covers the pin lifecycle (including extension semantics and the
+7-day cap), the kill-switch gating matrix, LivePin read-side expiry enforcement
+and alarms, the EmailLimiter window and the recovery-email send path, the cron
+sweep (including a multi-batch backlog), label sanitisation and escaping in the
+shells, abuse limits (per-IP creation, slug-lookup throttling), the
+env-label wrapper, and the PMTiles proxy against a synthetic archive
+(including leaf directories and header validation).
+
+The e2e suite runs in a real browser against local workerd (D1 + DOs in
+Miniflare): the full create → view → stop lifecycle, control-page reload
+recovery, control-link rotation, extensions visible to an open viewer, and
+offline/reconnect behaviour. It needs no Cloudflare credentials:
+`scripts/make-ci-wrangler.mjs` generates a config with the remote R2 binding
+stripped, so the map falls back to the public basemap. CI runs both suites on
+every pull request.
 
 ## Typecheck
 
@@ -70,7 +82,7 @@ wrangler d1 create findme-staging          # put the id in wrangler.jsonc (env.s
 wrangler d1 create findme                  # …and env.production
 wrangler r2 bucket create findme-tiles     # then follow docs/TILES.md §3
 wrangler secret put IP_SALT --env staging
-wrangler secret put TURNSTILE_SECRET --env staging   # optional but recommended
+wrangler secret put TURNSTILE_SECRET --env staging   # required before public launch (RUNBOOK §7)
 ```
 
 Then:

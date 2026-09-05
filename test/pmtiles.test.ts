@@ -106,6 +106,28 @@ describe("tiles proxy", () => {
   it("404s glyphs that were never uploaded", async () => {
     expect((await get("/tiles/fonts/Missing/0-255.pbf")).status).toBe(404);
   });
+
+  it("405s non-GET/HEAD requests", async () => {
+    expect((await get("/tiles/0/0/0.mvt", "POST")).status).toBe(405);
+  });
+
+  it("400s glyph paths that do not decode", async () => {
+    expect((await get("/tiles/fonts/%E0%A4%A")).status).toBe(400);
+  });
+});
+
+describe("archive validation", () => {
+  it("rejects short buffers and buffers without the PMTiles magic", () => {
+    expect(parseHeader(new Uint8Array(126))).toBeNull();
+    expect(parseHeader(new Uint8Array(127))).toBeNull(); // no magic
+  });
+
+  it("serves 503 from TileJSON for a non-v3 archive", async () => {
+    const bad = await buildArchive([tile(0, 0, 0, "x")]);
+    bad[7] = 2; // specVersion — anything but 3 is refused
+    await e.TILES.put(ARCHIVE_KEY, bad);
+    expect((await get("/tiles/tiles.json")).status).toBe(503);
+  });
 });
 
 describe("directory parsing (unit, against real archive bytes)", () => {

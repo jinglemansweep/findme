@@ -38,4 +38,32 @@ describe("cron sweep", () => {
     expect(slugs).not.toContain(expiredActive);
     expect(slugs).not.toContain(expiredStopped);
   });
+
+  it("drains a backlog larger than one batch in a single run", async () => {
+    // BATCH is 500 — a bigger backlog must not survive until the next cron.
+    // (The suite's earlier test leaves two live pins in this shared database.)
+    const before = await e.DB.prepare("SELECT COUNT(*) AS n FROM pins").first<{ n: number }>();
+    const inserted: string[] = [];
+    const now = Date.now();
+    for (let i = 0; i < 510; i += 100) {
+      const rows = Array.from({ length: Math.min(100, 510 - i) }, () => {
+        const slug = generateSlug();
+        inserted.push(slug);
+        return e.DB.prepare(
+          "INSERT INTO pins (slug, secret_hash, label, created_at, expires_at, status) VALUES (?, ?, NULL, ?, ?, 'active')",
+        ).bind(slug, "x".repeat(64), now, now - 1);
+      });
+      await e.DB.batch(rows);
+    }
+    const live = await insertPin(now + 3_600_000);
+
+    const outcome = await exports.default.scheduled({ scheduledTime: new Date(now), cron: "*/10 * * * *" });
+    expect(outcome.outcome).toBe("ok");
+
+    const remaining = await e.DB.prepare("SELECT slug FROM pins").all<{ slug: string }>();
+    const slugs = remaining.results.map((r) => r.slug);
+    expect(slugs).toContain(live);
+    expect(slugs.filter((s) => inserted.includes(s))).toEqual([]);
+    expect(slugs).toHaveLength(before!.n + 1);
+  });
 });

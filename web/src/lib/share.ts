@@ -1,7 +1,7 @@
 /**
  * Web Share API helpers — the OS share sheet (WhatsApp, email, SMS, …).
  * Callers must only ever hand it the PUBLIC link: the control link must
- * never enter a share sheet (§3).
+ * never enter a share sheet.
  */
 
 /** False where the API is absent (Firefox, Linux desktop) — hide the button. */

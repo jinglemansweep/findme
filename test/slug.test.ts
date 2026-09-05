@@ -16,7 +16,7 @@ describe("slugs", () => {
     }
   });
 
-  it("produces varied slugs (60 bits — the whole security model, §11)", () => {
+  it("produces varied slugs (60 bits — the whole security model)", () => {
     const seen = new Set<string>();
     for (let i = 0; i < 100; i++) seen.add(generateSlug());
     expect(seen.size).toBe(100);

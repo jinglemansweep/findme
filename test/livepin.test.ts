@@ -26,7 +26,7 @@ describe("LivePin", () => {
     await stub.stop();
   });
 
-  it("enforces expiry on read, before the alarm fires (§7)", async () => {
+  it("enforces expiry on read, before the alarm fires", async () => {
     const stub = stubFor("TESTPIN000002");
     await stub.configure(Date.now() + 60_000);
     await stub.setPosition({ lat: 1, lng: 2, accuracy: null });
@@ -44,7 +44,7 @@ describe("LivePin", () => {
 
     expect(await runDurableObjectAlarm(stub)).toBe(true);
     expect(await stub.getPosition()).toEqual({ gone: true });
-    // alarm() must be safe to retry (at-least-once execution, §8).
+    // alarm() must be safe to retry (at-least-once execution).
     expect(await runDurableObjectAlarm(stub)).toBe(false);
   });
 

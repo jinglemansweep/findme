@@ -1,7 +1,7 @@
 /**
  * Slugs: 12 characters of Crockford base32 (no I/L/O/U) = ~60 bits.
  * With no discovery surface, this entropy is the entire security model
- * (PLAN.md §11) — do not shorten it without a deliberate review.
+ * — do not shorten it without a deliberate review.
  */
 export const SLUG_LENGTH = 12;
 

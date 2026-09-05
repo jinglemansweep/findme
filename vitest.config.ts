@@ -24,6 +24,10 @@ export default defineConfig({
     }),
   ],
   test: {
+    // Only the workerd-backed unit suite lives here — the Playwright specs in
+    // e2e/ run in Node against a live wrangler dev and must not be collected
+    // (vitest's default *.spec.ts glob would swallow them).
+    include: ["test/**/*.test.ts"],
     setupFiles: ["./test/setup.ts"],
   },
 });

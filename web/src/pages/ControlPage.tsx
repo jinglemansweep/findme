@@ -19,7 +19,7 @@ import type { AppConfig, PinMeta } from "../types";
  *
  * Manual update is the primary control; the auto-update toggle ("Keep
  * updating", with a tooltip spelling out the limit) stops on
- * visibilitychange→hidden, saying so (§4).
+ * visibilitychange→hidden, saying so.
  */
 
 const AUTO_MOVE_METRES = 15;
@@ -318,7 +318,7 @@ function ControlPanel(props: ControlPanelProps) {
 
   // Auto-update: watchPosition throttled to >15m movement or >15s elapsed,
   // stopped on hidden, resumed on visible. Never let the user believe it is
-  // running when it isn't (§4).
+  // running when it isn't.
   useEffect(() => {
     if (!autoUpdate) {
       if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -531,7 +531,7 @@ function ControlPanel(props: ControlPanelProps) {
       <div className="info-card control-card" ref={cardRef}>
         {/* Sticky at the top of the card: the title and the top-level Stop
             control stay visible even when the controls below are scrolled
-            (§3 anti-footgun). */}
+            (anti-footgun). */}
         <div className="panel-banner" role="note">
           <div className="banner-row">
             <strong>Share Control</strong>

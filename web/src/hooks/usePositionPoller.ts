@@ -3,7 +3,7 @@ import { api, ApiError } from "../api";
 import type { Position } from "../types";
 
 /**
- * Viewer polling (PLAN.md §4): every 5s while the tab is visible, backing off
+ * Viewer polling: every 5s while the tab is visible, backing off
  * on repeated failure (5s → 10s → 30s, capped), resuming immediately on
  * visibilitychange→visible or an `online` event, stopping once ended.
  *
@@ -92,7 +92,7 @@ export function usePositionPoller(slug: string) {
       if (document.hidden) {
         clearTimer();
       } else {
-        failures.current = 0; // resume immediately on return (§4)
+        failures.current = 0; // resume immediately on return
         void pollRef.current();
       }
     };

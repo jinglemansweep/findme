@@ -9,7 +9,7 @@ export interface ShellOptions {
   /** Optional companion tint emitted with a dark-scheme media query. */
   themeColorDark?: string;
   /** OG card. Generic and coordinate-free on the public page; absent on the
-   * control page, which must never unfurl a preview in a chat window (§3). */
+   * control page, which must never unfurl a preview in a chat window. */
   og?: { title: string; description: string; url: string } | null;
   boot?: unknown;
   /** Set false for fully server-rendered pages (privacy) — no SPA bundle. */

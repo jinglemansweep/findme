@@ -7,7 +7,7 @@ const HTML_ESCAPES: Record<string, string> = {
 };
 
 /** The label is user-controlled text rendered into server HTML — escape it
- * everywhere it appears (PLAN.md §11). */
+ * everywhere it appears. */
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 }

@@ -1,5 +1,5 @@
 -- Pin registry: existence, authorisation and expiry only.
--- No latitude, no longitude, no email — ever (PLAN.md §6).
+-- No latitude, no longitude, no email — ever.
 CREATE TABLE pins (
   slug        TEXT PRIMARY KEY,        -- 12 chars Crockford base32
   secret_hash TEXT    NOT NULL,        -- sha256(secret), constant-time compare

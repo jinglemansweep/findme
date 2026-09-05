@@ -11,9 +11,9 @@ export interface ControlShellInput {
  *
  * The fragment never reaches the server, so this HTML is served to anyone
  * with the slug: it must contain nothing private. No OG tags at all, noindex,
- * no-store, no-referrer (PLAN.md §3).
+ * no-store, no-referrer.
  *
- * Visually distinct from the public page (§3 anti-footgun): a dark control
+ * Visually distinct from the public page (anti-footgun): a dark control
  * theme and a prominent copy-the-public-link button once hydrated.
  */
 export function controlShell(input: ControlShellInput): string {

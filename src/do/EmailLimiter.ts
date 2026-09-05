@@ -5,7 +5,7 @@ import type { Env } from "../env";
  * Exact per-recipient email quota. One object per sha256(recipient), because
  * the native ratelimits binding is per-colo approximate — and per-recipient
  * counting is exactly the case where approximation fails (an attacker routing
- * through several regions to repeatedly mail one victim; PLAN.md §11).
+ * through several regions to repeatedly mail one victim).
  *
  * The object MUST delete itself: one object per recipient hash, created and
  * never reclaimed, accumulates storage cost for a counter that is meaningless

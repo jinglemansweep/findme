@@ -29,7 +29,7 @@ export function notFoundShell(footer: { abuseEmail: string | null; privacyEmail:
 /**
  * HTML for /:slug — the public viewer page. Generic OG card only: previews
  * are fetched and cached by messaging platforms' CDNs, so no coordinates and
- * no label in meta tags (PLAN.md §10). The position itself never enters this
+ * no label in meta tags. The position itself never enters this
  * HTML; the SPA polls for it.
  */
 export function publicShell(input: PublicShellInput): string {
@@ -39,6 +39,9 @@ export function publicShell(input: PublicShellInput): string {
       bodyClass: "shell-view",
       themeColor: "#12433a",
       themeColorDark: "#0d1f1b",
+      // No SPA: if it booted, its poll would read the DO's 410 for a
+      // never-configured slug and overwrite this card with "share has ended".
+      includeApp: false,
       content: `
 <section class="state-card" data-state="notfound">
   <h1>This link doesn't match a share</h1>
@@ -70,7 +73,7 @@ export function publicShell(input: PublicShellInput): string {
 
   const label = input.row.label ?? "Live location";
   // Generic title: scrapers that ignore OG tags fall back to <title>, and the
-  // preview card must stay coordinate- and label-free (§10).
+  // preview card must stay coordinate- and label-free.
   return renderShell({
     title: "Find Me — a shared location",
     metaDescription: "A temporary, live location share. Open to see where this person is.",

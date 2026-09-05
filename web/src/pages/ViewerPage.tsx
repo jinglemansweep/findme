@@ -6,7 +6,7 @@ import { handoffTargets } from "../lib/handoff";
 import type { AppConfig } from "../types";
 
 /**
- * The public viewer page. Three connection states, never conflated (§4):
+ * The public viewer page. Three connection states, never conflated:
  * live / stale / disconnected, plus ended. Ages are computed from the
  * server-supplied `now`, not the client clock.
  */
@@ -149,7 +149,7 @@ export function ViewerPage({
 
 function ageOf(position: PolledPosition, now: number): number {
   // Server age at fetch time, plus client elapsed time since the fetch —
-  // immune to device clock skew (§4).
+  // immune to device clock skew.
   return position.serverNow - position.at + (now - position.fetchedAt);
 }
 

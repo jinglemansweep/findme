@@ -14,7 +14,7 @@ declare global {
 
 /**
  * Explicit-render Turnstile widget. The token flows into the create-pin POST
- * and is verified server-side against TURNSTILE_SECRET (§11).
+ * and is verified server-side against TURNSTILE_SECRET.
  */
 export function Turnstile({ siteKey, onToken }: { siteKey: string; onToken: (token: string | null) => void }) {
   const elRef = useRef<HTMLDivElement>(null);
