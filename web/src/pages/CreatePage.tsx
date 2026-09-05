@@ -6,7 +6,7 @@ import { Turnstile } from "../components/Turnstile";
 import { loadCreatedSession, storeCreatedSession, storeEmailNotice } from "../lib/createdSession";
 import { geolocationErrorMessage, getCurrentPosition } from "../lib/geolocation";
 import { savePin } from "../lib/storage";
-import type { AppConfig } from "../types";
+import type { AppConfig, CreatedPin } from "../types";
 
 const TTL_OPTIONS = [
   { value: 900, label: "15 minutes" },
@@ -16,7 +16,7 @@ const TTL_OPTIONS = [
   { value: 604_800, label: "7 days" },
 ];
 
-export function CreatePage({ config }: { config: AppConfig }) {
+export function CreatePage({ config, onCreated }: { config: AppConfig; onCreated: (pin: CreatedPin) => void }) {
   const [position, setPosition] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const [recenterToken, setRecenterToken] = useState(0);
   const [locating, setLocating] = useState(false);
@@ -29,6 +29,16 @@ export function CreatePage({ config }: { config: AppConfig }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Arriving via an in-page transition (after stopping a share) means no
+  // server shell was rendered for this page: apply the shell's title and
+  // body class ourselves. A no-op when the static page already set them —
+  // this effect runs before the env-label effect below, which appends to
+  // the title either way.
+  useEffect(() => {
+    document.body.className = "shell-create";
+    document.title = "Find Me — share your location temporarily";
+  }, []);
 
   // Non-production marker (staging's "beta"): this page's shell is a static
   // asset the Worker never renders, so the label is applied client-side
@@ -116,9 +126,11 @@ export function CreatePage({ config }: { config: AppConfig }) {
       });
       storeCreatedSession(result);
       if (result.email) storeEmailNotice(result.slug, result.email);
-      // The control page owns the share from here. replace() keeps the form
-      // out of history so Back doesn't return to a page that redirects.
-      location.replace(result.privateUrl);
+      // Hand straight over to the control page in the same document — no
+      // reload flash, no re-requesting the shell. The URL is replaced (not
+      // pushed) so Back skips the create form, and the secret travels via
+      // the callback rather than the URL fragment.
+      onCreated(result);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not create the pin. Check your connection and try again.");
       setCreating(false);
