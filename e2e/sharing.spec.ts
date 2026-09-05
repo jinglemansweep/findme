@@ -42,6 +42,11 @@ test("create, view, then stop a share", async ({ browser }) => {
   const creatorPage = await creator.newPage();
 
   await creatorPage.goto("/");
+  // A document reload would wipe this window property; asserting it at the
+  // end proves both the share-start and stop transitions happened in-page.
+  await creatorPage.evaluate(() => {
+    (window as unknown as Record<string, unknown>).__noReload = true;
+  });
   await creatorPage.getByLabel("Message (optional)").fill(LABEL);
   // The page also offers the fix automatically once permission is granted;
   // pressing the button is the deterministic path.
@@ -68,6 +73,12 @@ test("create, view, then stop a share", async ({ browser }) => {
   await creatorPage.getByRole("button", { name: "Stop sharing" }).click();
   await creatorPage.getByRole("button", { name: "Yes, stop sharing" }).click();
   await creatorPage.waitForURL((url) => url.pathname === "/");
+  // Back on the create page — same document, no reload flash.
+  const sameDocument = await creatorPage.evaluate(
+    () => (window as unknown as Record<string, unknown>).__noReload === true,
+  );
+  expect(sameDocument).toBe(true);
+  await expect(creatorPage.getByRole("button", { name: "Share", exact: true })).toBeVisible();
   await expect(viewerPage.getByRole("heading", { name: "This share has ended" })).toBeVisible({
     timeout: 15_000,
   });

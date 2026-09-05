@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { AppConfig, BootConfig } from "./types";
 import { CreatePage } from "./pages/CreatePage";
 import { ViewerPage } from "./pages/ViewerPage";
@@ -30,7 +31,30 @@ function readBoot(): BootConfig {
 }
 
 export default function App({ config }: { config: AppConfig }) {
-  const boot = readBoot();
+  const [boot, setBoot] = useState<BootConfig>(readBoot);
+  // Secret handed over during an in-page create → control transition. Same
+  // lifetime rules as the URL fragment: memory only, never written anywhere
+  // the server sees.
+  const [handedSecret, setHandedSecret] = useState<string | null>(null);
+
+  /**
+   * Create → control without a document reload. replaceState keeps the
+   * create form out of history (Back skips it), exactly as the old
+   * location.replace did — a reload of /u/:slug then lands on the Worker
+   * shell, which recovers the secret from device storage.
+   */
+  function enterControl(pin: { slug: string; secret: string }) {
+    history.replaceState(null, "", `/u/${pin.slug}`);
+    setHandedSecret(pin.secret);
+    setBoot({ mode: "control", slug: pin.slug });
+  }
+
+  /** Control → create (after stopping a share) without a document reload. */
+  function exitToCreate() {
+    history.replaceState(null, "", "/");
+    setHandedSecret(null);
+    setBoot({ mode: "create" });
+  }
 
   if (boot.mode === "view" && boot.slug) {
     return (
@@ -44,7 +68,15 @@ export default function App({ config }: { config: AppConfig }) {
     );
   }
   if (boot.mode === "control" && boot.slug) {
-    return <ControlPage config={config} slug={boot.slug} endedBoot={Boolean(boot.ended)} />;
+    return (
+      <ControlPage
+        config={config}
+        slug={boot.slug}
+        endedBoot={Boolean(boot.ended)}
+        handedSecret={handedSecret}
+        onExitToCreate={exitToCreate}
+      />
+    );
   }
-  return <CreatePage config={config} />;
+  return <CreatePage config={config} onCreated={enterControl} />;
 }

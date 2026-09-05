@@ -14,8 +14,9 @@ import { getSavedPin, removeSavedPin, savePin, updateSavedPin } from "../lib/sto
 import type { AppConfig, PinMeta } from "../types";
 
 /**
- * The private control page (booted from /u/:slug#s_…). The secret is read
- * from the fragment, stripped from the URL, and held in memory only.
+ * The private control page (booted from /u/:slug#s_…, or handed over in-page
+ * when a share is created). The secret is read from the fragment (or the
+ * handover), stripped from the URL, and held in memory only.
  *
  * Manual update is the primary control; the auto-update toggle ("Keep
  * updating", with a tooltip spelling out the limit) stops on
@@ -36,13 +37,30 @@ const WAKE_LOCK_SUPPORTED = typeof navigator !== "undefined" && "wakeLock" in na
 
 type WatchState = "off" | "on" | "paused-hidden";
 
-export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; slug: string; endedBoot: boolean }) {
+interface ControlPageProps {
+  config: AppConfig;
+  slug: string;
+  endedBoot: boolean;
+  /** Secret from an in-page create → control transition; never in the URL. */
+  handedSecret?: string | null;
+  /** Return to the create page in-page (share stopped or ended). */
+  onExitToCreate?: () => void;
+}
+
+export function ControlPage({ config, slug, endedBoot, handedSecret, onExitToCreate }: ControlPageProps) {
   const secretRef = useRef<string | null>(null);
   const [secretMissing, setSecretMissing] = useState(false);
   const [meta, setMeta] = useState<PinMeta | null>(null);
   const [metaError, setMetaError] = useState<number | null>(null);
   const { status, position } = usePositionPoller(slug);
   const publicUrl = `${location.origin}/${slug}`;
+
+  // Arriving via an in-page transition means no server shell was rendered
+  // for this page: apply the control shell's title and dark body class.
+  useEffect(() => {
+    document.body.className = "shell-control";
+    document.title = "Your control page — Find Me";
+  }, []);
 
   // Read the secret from the fragment once, then strip it from the URL
   // (history.replaceState — the fragment never reaches the server anyway).
@@ -53,6 +71,8 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
     const match = /^#s_(.+)$/.exec(location.hash);
     if (match) {
       secretRef.current = match[1];
+    } else if (handedSecret) {
+      secretRef.current = handedSecret;
     } else {
       const stored = loadCreatedSession();
       const saved = getSavedPin(slug);
@@ -139,7 +159,7 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
   }
 
   if (ended && meta) {
-    return <EndedCard slug={slug} meta={meta} />;
+    return <EndedCard slug={slug} meta={meta} onExitToCreate={onExitToCreate} />;
   }
   if (!meta) {
     return (
@@ -156,6 +176,7 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
       secretRef={secretRef}
       meta={meta}
       onMetaChanged={loadMeta}
+      onExitToCreate={onExitToCreate}
       publicUrl={publicUrl}
       position={position}
       positionStatus={status}
@@ -164,12 +185,27 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
   );
 }
 
-function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
+function EndedCard({
+  slug,
+  meta,
+  onExitToCreate,
+}: {
+  slug: string;
+  meta: PinMeta;
+  onExitToCreate?: () => void;
+}) {
   useEffect(() => {
     removeSavedPin(slug);
     // The create page must not redirect back to this dead control link.
     clearCreatedSessionFor(slug);
   }, [slug]);
+  // Links (not buttons) so open-in-new-tab keeps working; intercepted for an
+  // in-page transition when the callback is available.
+  const startAgain = (e: React.MouseEvent) => {
+    if (!onExitToCreate) return;
+    e.preventDefault();
+    onExitToCreate();
+  };
   return (
     <section className="state-card" data-state="ended">
       <h1>This share has ended</h1>
@@ -179,10 +215,10 @@ function EndedCard({ slug, meta }: { slug: string; meta: PinMeta }) {
           : `This share expired ${relativeAge(Date.now() - meta.expiresAt)} ago. The location has been deleted.`}
       </p>
       <p>
-        <a className="button primary" href="/">
+        <a className="button primary" href="/" onClick={startAgain}>
           Share my location again
         </a>
-        <a className="button secondary" href="/">
+        <a className="button secondary" href="/" onClick={startAgain}>
           Home
         </a>
       </p>
@@ -196,6 +232,7 @@ interface ControlPanelProps {
   secretRef: React.RefObject<string | null>;
   meta: PinMeta;
   onMetaChanged: () => Promise<void>;
+  onExitToCreate?: () => void;
   publicUrl: string;
   position: ReturnType<typeof usePositionPoller>["position"];
   positionStatus: ReturnType<typeof usePositionPoller>["status"];
@@ -203,7 +240,7 @@ interface ControlPanelProps {
 }
 
 function ControlPanel(props: ControlPanelProps) {
-  const { config, slug, secretRef, meta, onMetaChanged, publicUrl, position, emailNotice } = props;
+  const { config, slug, secretRef, meta, onMetaChanged, onExitToCreate, publicUrl, position, emailNotice } = props;
   const [now, setNow] = useState(Date.now());
   const [copied, setCopied] = useState(false);
   const [copiedControl, setCopiedControl] = useState(false);
@@ -443,8 +480,10 @@ function ControlPanel(props: ControlPanelProps) {
       removeSavedPin(slug);
       clearCreatedSessionFor(slug);
       // Stopping is definitive — return to the create page for a fresh
-      // share instead of showing the ended card here.
-      location.assign("/");
+      // share instead of showing the ended card here. In-page when the
+      // transition callback is available; a plain navigation otherwise.
+      if (onExitToCreate) onExitToCreate();
+      else location.assign("/");
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't stop the share.");
       setBusy(null);
