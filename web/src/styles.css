@@ -200,6 +200,27 @@ main {
   border-color: var(--ok);
 }
 
+/* Armed state of a two-tap confirm (replace control link): the quiet icon
+   fills with --ok and flips to a check until the tap-again window closes. */
+.button.icon-button.armed {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: var(--card);
+}
+
+/* Off-screen text so icon-only state changes are announced, not just seen. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .button-row {
   display: flex;
   gap: 0.6rem;
@@ -511,6 +532,24 @@ select {
   accent-color: var(--brand);
 }
 
+/* Keep updating / Keep screen on share one row with a single advisory
+   tooltip parked at the right edge; on a very narrow card the second pair
+   drops to its own line rather than shrinking. */
+.toggles-row {
+  flex-wrap: wrap;
+  row-gap: 0.45rem;
+}
+
+.toggles-row .toggle-pair .toggle-row {
+  white-space: nowrap;
+}
+
+.toggle-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 /* Collapsed help text (e.g. the recovery-email explanation) keeps the form
    compact; the summary reads as a small link. */
 .help-details summary {
@@ -556,6 +595,16 @@ select {
 
 .label-row h2 {
   margin: 0;
+}
+
+/* Heading rows whose controls (copy/rotate, advisory) all live at the right
+   edge: the title takes the free space, the icons group up beside the ⓘ. */
+.label-row.icon-row h2 {
+  margin-right: auto;
+}
+
+.label-row.icon-row .info-tip {
+  margin-left: 0;
 }
 
 /* Title-less expiry section: extend button, live countdown, and the exact
@@ -608,6 +657,12 @@ select {
 .banner-stop {
   flex: none;
   margin-left: auto; /* park the stop control at the banner's right edge */
+}
+
+/* The advisory tooltip tucks in right of the Stop control, at the edge —
+   drop its own auto margin or it would split the row's free space. */
+.banner-row .info-tip {
+  margin-left: 0;
 }
 
 /* The ghost tooltip button is dark-on-dark inside the banner — lighten it. */

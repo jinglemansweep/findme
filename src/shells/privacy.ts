@@ -2,7 +2,7 @@ import { escapeHtml } from "../lib/html";
 import { renderShell } from "./layout";
 
 // Bump this whenever PRIVACY.md changes materially.
-const NOTICE_UPDATED = "2026-09-02";
+const NOTICE_UPDATED = "2026-09-05";
 
 /**
  * Serves PRIVACY.md at /privacy. The renderer handles exactly the constructs

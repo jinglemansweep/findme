@@ -44,7 +44,10 @@ placing the pin yourself or by requesting an update from your control page.
 Your browser will ask permission first.
 
 Your location updates only while the page is open. If you close the tab or
-lock your phone, updating stops. We cannot track you in the background.
+lock your phone, updating stops. We cannot track you in the background. The
+control page can optionally ask your browser to keep your screen on while it
+is open, so automatic updates keep streaming — but switching to another app
+or locking your phone still pauses them.
 
 ## Email
 

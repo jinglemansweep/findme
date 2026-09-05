@@ -25,6 +25,15 @@ import type { AppConfig, PinMeta } from "../types";
 const AUTO_MOVE_METRES = 15;
 const AUTO_INTERVAL_MS = 15_000;
 
+// Armed two-tap confirm for replacing the control link: a generous window
+// (reverting is always safe), minus a guard against accidental double-taps.
+const ROTATE_ARMED_MS = 5_000;
+const DOUBLE_TAP_GUARD_MS = 300;
+
+// Screen Wake Lock (Chrome/Edge/Safari; not Firefox) — offered only where it
+// exists, and only ever while the page is visible.
+const WAKE_LOCK_SUPPORTED = typeof navigator !== "undefined" && "wakeLock" in navigator;
+
 type WatchState = "off" | "on" | "paused-hidden";
 
 export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; slug: string; endedBoot: boolean }) {
@@ -84,6 +93,11 @@ export function ControlPage({ config, slug, endedBoot }: { config: AppConfig; sl
         <p>The full link ends with a code after <code>#s_</code>. Use the exact
         link you were given (or the one saved on this device) — it can't be
         reconstructed from here.</p>
+        <p>
+          <a className="button primary" href="/">
+            Go to the homepage
+          </a>
+        </p>
       </section>
     );
   }
@@ -177,6 +191,8 @@ function ControlPanel(props: ControlPanelProps) {
   const [copiedControl, setCopiedControl] = useState(false);
   const [shared, setShared] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const rotateBtnRef = useRef<HTMLButtonElement>(null);
+  const rotateArmedAtRef = useRef(0);
 
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
@@ -187,6 +203,10 @@ function ControlPanel(props: ControlPanelProps) {
   const watchIdRef = useRef<number | null>(null);
   const lastSentRef = useRef<{ lat: number; lng: number; at: number } | null>(null);
 
+  const [keepAwake, setKeepAwake] = useState(false);
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
   const [moveMode, setMoveMode] = useState(false);
   const [moveTarget, setMoveTarget] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -194,10 +214,10 @@ function ControlPanel(props: ControlPanelProps) {
   const [busy, setBusy] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmStop, setConfirmStop] = useState(false);
-  const [confirmRotate, setConfirmRotate] = useState(false);
   // Re-render trigger for after a rotation: the control-link row reads the
   // fresh secret from secretRef.
   const [rotated, setRotated] = useState(false);
+  const [rotateArmed, setRotateArmed] = useState(false);
 
   useEffect(() => {
     const t = window.setInterval(() => {
@@ -206,6 +226,29 @@ function ControlPanel(props: ControlPanelProps) {
     }, 1_000);
     return () => window.clearInterval(t);
   }, [meta.expiresAt]);
+
+  // While the rotate button is armed: a generous window to tap again, closed
+  // early by Escape, a press elsewhere, or scrolling away from the decision.
+  useEffect(() => {
+    if (!rotateArmed) return;
+    const t = window.setTimeout(() => setRotateArmed(false), ROTATE_ARMED_MS);
+    const onPointerDown = (e: PointerEvent) => {
+      if (!rotateBtnRef.current?.contains(e.target as Node)) setRotateArmed(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setRotateArmed(false);
+    };
+    const onScroll = () => setRotateArmed(false);
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      window.clearTimeout(t);
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("scroll", onScroll, true);
+    };
+  }, [rotateArmed]);
 
   const sendPosition = useCallback(
     async (pos: { lat: number; lng: number; accuracy: number | null }) => {
@@ -301,6 +344,49 @@ function ControlPanel(props: ControlPanelProps) {
     };
   }, [autoUpdate, sendPosition]);
 
+  // Screen Wake Lock: while enabled, hold a lock whenever the page is
+  // visible. The browser releases the lock on its own when the page is
+  // hidden — re-request on return, and let the note say what is true.
+  useEffect(() => {
+    if (!keepAwake) return;
+    let cancelled = false;
+
+    const acquire = async () => {
+      if (cancelled || wakeLockRef.current || document.visibilityState !== "visible") return;
+      try {
+        const sentinel = await navigator.wakeLock.request("screen");
+        if (cancelled) {
+          void sentinel.release();
+          return;
+        }
+        sentinel.addEventListener("release", () => {
+          wakeLockRef.current = null;
+          setWakeLockActive(false);
+        });
+        wakeLockRef.current = sentinel;
+        setWakeLockActive(true);
+      } catch {
+        // Denied or unavailable (e.g. battery saver) — the note shows we are
+        // not holding the screen rather than promising.
+        setWakeLockActive(false);
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void acquire();
+    };
+
+    void acquire();
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      wakeLockRef.current?.release();
+      wakeLockRef.current = null;
+      setWakeLockActive(false);
+    };
+  }, [keepAwake]);
+
   async function moveToTarget() {
     if (!moveTarget) return;
     setBusy("move");
@@ -364,7 +450,7 @@ function ControlPanel(props: ControlPanelProps) {
       setActionError(err instanceof ApiError ? err.message : "Couldn't rotate the link.");
     } finally {
       setBusy(null);
-      setConfirmRotate(false);
+      setRotateArmed(false);
     }
   }
 
@@ -382,6 +468,21 @@ function ControlPanel(props: ControlPanelProps) {
     const ok = await copyText(controlUrl);
     setCopiedControl(ok);
     if (ok) window.setTimeout(() => setCopiedControl(false), 2_000);
+  }
+
+  // Two-tap confirm: first tap arms (icon flips to a check), second tap
+  // within the window rotates. A too-fast second tap is a double-click,
+  // not a confirmation.
+  function rotateClick() {
+    const now = Date.now();
+    if (!rotateArmed) {
+      rotateArmedAtRef.current = now;
+      setRotateArmed(true);
+      return;
+    }
+    if (now - rotateArmedAtRef.current < DOUBLE_TAP_GUARD_MS) return;
+    setRotateArmed(false);
+    void rotate();
   }
 
   // Opens the OS share sheet for the PUBLIC link — never the control link.
@@ -416,10 +517,6 @@ function ControlPanel(props: ControlPanelProps) {
         <div className="panel-banner" role="note">
           <div className="banner-row">
             <strong>Share Control</strong>
-            <InfoTooltip
-              label="About the control page"
-              text="Anyone holding this link can move or stop your share — never paste it into a chat."
-            />
             <button
               className="button danger small banner-stop"
               type="button"
@@ -428,6 +525,10 @@ function ControlPanel(props: ControlPanelProps) {
             >
               {busy === "stop" ? "Stopping…" : "Stop sharing"}
             </button>
+            <InfoTooltip
+              label="About the control page"
+              text="Anyone holding this link can move or stop your share — never paste it into a chat."
+            />
           </div>
           {confirmStop && (
             <div className="confirm-row">
@@ -534,28 +635,46 @@ function ControlPanel(props: ControlPanelProps) {
                   : "No location shared yet"}
           </p>
 
-          {/* The tooltip lives outside the <label>: a click inside a label
-              toggles the checkbox. */}
-          <div className="toggle-row">
-            <label className="toggle-row" htmlFor="auto-update">
-              <input
-                id="auto-update"
-                type="checkbox"
-                checked={autoUpdate}
-                onChange={(e) => setAutoUpdate(e.target.checked)}
-              />
-              <span>Keep updating</span>
-            </label>
-            <InfoTooltip
-              label="About keep updating"
-              text="Your location updates automatically while this screen stays open and active — switching to another tab or app pauses it until you return."
-            />
+          {/* One status line under the row reflects what is actually
+              happening, including whether the screen is being held on. */}
+          <div className="toggle-row toggles-row">
+            <span className="toggle-pair">
+              <label className="toggle-row" htmlFor="auto-update">
+                <input
+                  id="auto-update"
+                  type="checkbox"
+                  checked={autoUpdate}
+                  onChange={(e) => {
+                    setAutoUpdate(e.target.checked);
+                    if (!e.target.checked) setKeepAwake(false);
+                  }}
+                />
+                <span>Keep updating</span>
+              </label>
+            </span>
+            {WAKE_LOCK_SUPPORTED && autoUpdate && (
+              <span className="toggle-pair">
+                <label className="toggle-row" htmlFor="keep-awake">
+                  <input
+                    id="keep-awake"
+                    type="checkbox"
+                    checked={keepAwake}
+                    onChange={(e) => setKeepAwake(e.target.checked)}
+                  />
+                  <span>Keep screen on</span>
+                </label>
+              </span>
+            )}
           </div>
           {autoUpdate && (
             <p className="field-note" role="status">
               {watchState === "paused-hidden"
-                ? "Paused — you switched away from this screen. Updates resume when you come back."
-                : "Updating automatically while this screen is open."}
+                ? "Paused — you switched away. Updates resume when you come back."
+                : keepAwake
+                  ? wakeLockActive
+                    ? "Updating automatically — screen kept on."
+                    : "Updating automatically — screen keep-on not active."
+                  : "Updating automatically while this screen is open."}
             </p>
           )}
         </div>
@@ -576,31 +695,8 @@ function ControlPanel(props: ControlPanelProps) {
         </div>
 
         <div className="control-section danger-zone">
-          <div className="label-row">
+          <div className="label-row icon-row">
             <h2>Control link</h2>
-            <InfoTooltip
-              label="About the control link"
-              text="Saved on this device. Never paste it into a chat — anyone holding it can move or stop your share."
-            />
-          </div>
-          <div className="copy-row">
-            <input
-              type="text"
-              readOnly
-              value={controlUrl}
-              onFocus={(e) => e.target.select()}
-              aria-label="Your control link"
-            />
-            <button
-              className="button icon-button"
-              type="button"
-              onClick={() => setConfirmRotate(true)}
-              disabled={busy === "rotate"}
-              aria-label="Replace control link"
-              title="Replace control link"
-            >
-              <RotateIcon />
-            </button>
             <button
               className={`button icon-button${copiedControl ? " copied" : ""}`}
               type="button"
@@ -610,20 +706,44 @@ function ControlPanel(props: ControlPanelProps) {
             >
               {copiedControl ? <CheckIcon /> : <CopyIcon />}
             </button>
+            <button
+              ref={rotateBtnRef}
+              className={`button icon-button${rotateArmed ? " armed" : ""}`}
+              type="button"
+              onClick={rotateClick}
+              disabled={busy === "rotate"}
+              aria-label={rotateArmed ? "Tap again to replace the control link" : "Replace control link"}
+              aria-pressed={rotateArmed}
+              title={rotateArmed ? "Tap again to replace the control link" : "Replace control link"}
+            >
+              {rotateArmed ? <CheckIcon /> : <RotateIcon />}
+            </button>
+            <InfoTooltip
+              label="About the control link"
+              text="Saved on this device. Never paste it into a chat — anyone holding it can move or stop your share."
+            />
           </div>
-          {confirmRotate && (
-            <div className="confirm-row">
-              <p>Replace the control link? The previous one stops working immediately.</p>
-              <div className="button-row">
-                <button className="button secondary" type="button" onClick={rotate} disabled={busy === "rotate"}>
-                  {busy === "rotate" ? "Rotating…" : "Yes, replace link"}
-                </button>
-                <button className="button ghost" type="button" onClick={() => setConfirmRotate(false)}>
-                  Cancel
-                </button>
-              </div>
+          {/* The link itself is only revealed right after a rotation — at any
+              other time showing it invites pasting the control link where the
+              share link belongs. */}
+          {rotated ? (
+            <div className="copy-row">
+              <input
+                type="text"
+                readOnly
+                value={controlUrl}
+                onFocus={(e) => e.target.select()}
+                aria-label="Your control link"
+              />
             </div>
+          ) : (
+            <p className="field-note">
+              Hidden until you replace it — then the new link is shown here and saved on this device.
+            </p>
           )}
+          <span className="visually-hidden" role="status">
+            {rotateArmed ? "Tap again to replace the control link" : ""}
+          </span>
           {rotated && (
             <p className="field-note" role="status">
               New link saved on this device — the old one no longer works.
